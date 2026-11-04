@@ -84,7 +84,7 @@ input[type=search]{font:400 15px inherit;font-family:inherit;color:var(--ink);ba
   <header class="hero">
     <div>
       <h1>Công cụ web-gui</h1>
-      <p class="sub" id="sub">Mọi trang trong thư mục, mở bằng một lần bấm. Quét lần cuối: 17:50:45 4/11/2026.</p>
+      <p class="sub" id="sub">Mọi trang trong thư mục, mở bằng một lần bấm. Quét lần cuối: 03:03:50 5/11/2026.</p>
     </div>
     <button class="scan" id="scan" type="button" aria-label="Quét thư mục">
       <svg viewBox="0 0 48 48" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" aria-hidden="true">
@@ -98,7 +98,7 @@ input[type=search]{font:400 15px inherit;font-family:inherit;color:var(--ink);ba
   <div class="bar ok" id="bar" hidden=""></div>
 
   <div class="tools">
-    <h2>Trang đã quét<span id="count">4</span></h2>
+    <h2>Trang đã quét<span id="count">5</span></h2>
     <input type="search" id="q" placeholder="Tìm theo tên hoặc file" aria-label="Tìm trang">
   </div>
   <ul class="list" id="list"></ul>
@@ -112,13 +112,20 @@ const REPO_API = "https://api.github.com/repos/user7642/web-gui/contents/";
 /* Dữ liệu dưới đây được ghi cứng vào file mỗi lần bấm Scan rồi Lưu. Không sửa tay phần giữa hai dấu mốc. */
 /*DATA_START*/
 let DATA = {
- "scanned": "2026-11-04T10:50:45.678Z",
+ "scanned": "2026-11-04T20:03:50.872Z",
  "pages": [
   {
    "file": "banner-tool.html",
    "title": "Banner Studio – ảnh bìa sản phẩm",
    "hue": 111,
    "emoji": "🖼️"
+  },
+  {
+   "file": "gedit.html",
+   "title": "Gedit",
+   "hue": 55,
+   "emoji": "🧩",
+   "img": "data:image/svg+xml,%3Csvg%20xmlns='http://www.w3.org/2000/svg'%20width='16'%20height='16'%20version='1'%3E%3Cpath%20style='fill:%23e4e4e4'%20d='M%200.8125%2C16%20C%200.36237%2C16%200%2C15.643%200%2C15.2%20V%200.8%20C%200%2C0.3568%200.36237%2C0%200.8125%2C0%20H%2012.188%20C%2012.638%2C0%2013%2C0.3568%2013%2C0.8%20V%2011%20L%208%2C16%20Z'/%3E%3Cpath%20style='fill:%23fafafa'%20d='M%208%2C16%20V%2011.833%20C%208%2C11.373%208.3731%2C11%208.8333%2C11%20H%2013%20Z'/%3E%3Cpath%20style='fill:%23f3d491'%20d='M%205%2C11%20V%208.4352%20L%207.5648%2C11%20Z'/%3E%3Cpath%20style='fill:%23545454'%20d='M%205%2C11%20V%209.9741%20L%206.0259%2C11%20Z'/%3E%3Cpath%20style='fill:%23ffbb29'%20d='M%2013.207%2C0.22798%205%2C8.4352%207.5648%2C11%2015.772%2C2.7927%20C%2015.772%2C2.7927%2016.285%2C2.2798%2015.772%2C1.7668%20L%2014.233%2C0.22798%20C%2013.72%2C-0.28497%2013.207%2C0.22798%2013.207%2C0.22798%20Z'/%3E%3C/svg%3E"
   },
   {
    "file": "print-preview.html",
