@@ -1,0 +1,551 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Gedit</title>
+<link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg%20xmlns='http://www.w3.org/2000/svg'%20width='16'%20height='16'%20version='1'%3E%3Cpath%20style='fill:%23e4e4e4'%20d='M%200.8125%2C16%20C%200.36237%2C16%200%2C15.643%200%2C15.2%20V%200.8%20C%200%2C0.3568%200.36237%2C0%200.8125%2C0%20H%2012.188%20C%2012.638%2C0%2013%2C0.3568%2013%2C0.8%20V%2011%20L%208%2C16%20Z'/%3E%3Cpath%20style='fill:%23fafafa'%20d='M%208%2C16%20V%2011.833%20C%208%2C11.373%208.3731%2C11%208.8333%2C11%20H%2013%20Z'/%3E%3Cpath%20style='fill:%23f3d491'%20d='M%205%2C11%20V%208.4352%20L%207.5648%2C11%20Z'/%3E%3Cpath%20style='fill:%23545454'%20d='M%205%2C11%20V%209.9741%20L%206.0259%2C11%20Z'/%3E%3Cpath%20style='fill:%23ffbb29'%20d='M%2013.207%2C0.22798%205%2C8.4352%207.5648%2C11%2015.772%2C2.7927%20C%2015.772%2C2.7927%2016.285%2C2.2798%2015.772%2C1.7668%20L%2014.233%2C0.22798%20C%2013.72%2C-0.28497%2013.207%2C0.22798%2013.207%2C0.22798%20Z'/%3E%3C/svg%3E">
+<style>
+  :root {
+    --bg: #f4f4f2; --panel: #ffffff; --gutter: #f0f0ed; --text: #1d1d1b; --muted: #8a8a84;
+    --border: #d9d9d4; --accent: #e59a00; --shadow: rgba(0,0,0,.12);
+    --ff-mono: ui-monospace, "Cascadia Code", Consolas, "Liberation Mono", monospace;
+    --ff-sans: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+    --ff: var(--ff-mono); --fs: 20px; --lh: 32px;
+  }
+  :root[data-theme="dark"] {
+    --bg: #1b1b1a; --panel: #262625; --gutter: #212120; --text: #ececea; --muted: #77776f;
+    --border: #3a3a38; --accent: #ffbb29; --shadow: rgba(0,0,0,.5);
+  }
+  :root[data-font="sans"] { --ff: var(--ff-sans); }
+  * { box-sizing: border-box; }
+  [hidden] { display: none !important; }
+  html, body { height: 100%; margin: 0; }
+  body {
+    display: flex; flex-direction: column; gap: 8px; padding: 10px;
+    background: var(--bg); color: var(--text); font-family: var(--ff-sans);
+  }
+
+  /* Thanh công cụ + thanh tìm/thay */
+  .toolbar, .findbar {
+    display: flex; flex-wrap: wrap; align-items: center; gap: 6px;
+    padding: 6px 8px; background: var(--panel);
+    border: 1px solid var(--border); border-radius: 8px;
+  }
+  .toolbar .sep { width: 1px; height: 22px; background: var(--border); margin: 0 4px; }
+  .grow { flex: 1; }
+  button {
+    font: inherit; font-size: .85rem; color: var(--text);
+    background: transparent; border: 1px solid var(--border);
+    border-radius: 6px; padding: 4px 10px; cursor: pointer;
+  }
+  button:hover { border-color: var(--accent); }
+  button[aria-pressed="true"] { background: var(--accent); color: #000; border-color: var(--accent); }
+  #sizeLabel { color: var(--muted); font-size: .85rem; min-width: 3.2em; text-align: center; }
+  .findbar input[type="text"] {
+    font: inherit; font-size: .85rem; padding: 4px 8px; width: 170px; min-width: 0;
+    color: var(--text); background: var(--bg);
+    border: 1px solid var(--border); border-radius: 6px; outline: none;
+  }
+  .findbar input[type="text"]:focus { border-color: var(--accent); }
+  #fCount { color: var(--muted); font-size: .8rem; min-width: 4.5em; }
+
+  /* Menu thả xuống */
+  .menu { position: relative; }
+  .dropdown {
+    position: absolute; top: calc(100% + 4px); left: 0; z-index: 20; min-width: 250px;
+    display: flex; flex-direction: column; gap: 2px; padding: 6px;
+    background: var(--panel); border: 1px solid var(--border);
+    border-radius: 8px; box-shadow: 0 6px 20px var(--shadow);
+  }
+  .dropdown button { text-align: left; border: 0; padding: 6px 10px; }
+  .dropdown button:hover { background: var(--bg); }
+  .dropdown .label { font-size: .7rem; letter-spacing: .04em; text-transform: uppercase; color: var(--muted); padding: 6px 10px 2px; }
+
+  /* Vùng soạn thảo: cột số dòng nằm NGOÀI textarea */
+  .workspace {
+    position: relative; flex: 1; min-height: 0; display: flex; overflow: hidden;
+    background: var(--panel); border: 1px solid var(--border);
+    border-radius: 8px; box-shadow: 0 2px 8px var(--shadow);
+  }
+  .workspace:focus-within { border-color: var(--accent); }
+  #gutter {
+    flex: none; overflow: hidden; text-align: right; cursor: default;
+    background: var(--gutter); color: var(--muted);
+    border-right: 1px solid var(--border);
+    -webkit-user-select: none; user-select: none;
+    font-family: var(--ff); font-size: var(--fs); line-height: var(--lh);
+  }
+  #gutterInner { padding: 16px 10px 48px 8px; }
+  .ln { height: var(--lh); }
+  #editor, #mirror {
+    font-family: var(--ff); font-size: var(--fs); line-height: var(--lh);
+    tab-size: 4; letter-spacing: normal;
+  }
+  #editor {
+    flex: 1; min-width: 0; resize: none; border: 0; outline: none;
+    padding: 16px 18px; color: var(--text); background: transparent;
+    white-space: pre-wrap; overflow-wrap: break-word;
+  }
+  #editor.nowrap { white-space: pre; overflow-wrap: normal; overflow-x: auto; }
+  #mirror {
+    position: absolute; left: 0; top: 0; visibility: hidden; pointer-events: none;
+    margin: 0; padding: 0; border: 0; white-space: pre-wrap; overflow-wrap: break-word;
+  }
+
+  .status { display: flex; align-items: center; gap: 14px; flex-wrap: wrap; color: var(--muted); font-size: .8rem; padding: 0 4px; }
+  .status button { font-size: .78rem; padding: 2px 8px; color: var(--muted); }
+  input[type="file"] { display: none; }
+
+  #printArea { display: none; }
+  @media print {
+    html, body { height: auto; }
+    body { display: block; padding: 0; background: #fff; }
+    .toolbar, .findbar, .workspace, .status { display: none !important; }
+    #printArea {
+      display: block; white-space: pre-wrap; overflow-wrap: break-word;
+      font: 11pt/1.5 ui-monospace, Consolas, monospace; color: #000;
+    }
+  }
+</style>
+</head>
+<body>
+
+  <div class="toolbar" id="toolbar" hidden>
+    <button id="open" title="Mở file văn bản (Ctrl+O)">Mở</button>
+
+    <div class="menu">
+      <button data-menu>Xuất ▾</button>
+      <div class="dropdown" hidden>
+        <button data-export="txt">Tải về .txt (Ctrl+S)</button>
+        <button data-export="md">Tải về .md</button>
+        <button data-export="html">Tải về .html</button>
+        <button data-export="print">In…</button>
+      </div>
+    </div>
+
+    <button id="copy" title="Sao chép toàn bộ nội dung">Sao chép</button>
+    <button id="clear" title="Xóa nội dung">Xóa</button>
+    <span class="sep"></span>
+
+    <button id="smaller" title="Giảm cỡ chữ">A−</button>
+    <span id="sizeLabel">20px</span>
+    <button id="bigger" title="Tăng cỡ chữ">A+</button>
+    <button id="mono" title="Đổi phông chữ">Mono</button>
+    <button id="wrap" title="Tự xuống dòng">Xuống dòng</button>
+    <button id="lines" title="Hiện số dòng">Số dòng</button>
+    <span class="sep"></span>
+
+    <button id="findBtn" title="Tìm và thay thế (Ctrl+H)">Tìm/Thay</button>
+
+    <div class="menu">
+      <button data-menu>Xử lý văn bản ▾</button>
+      <div class="dropdown" hidden>
+        <div class="label">Dòng trống</div>
+        <button data-tool="blank-collapse">Gộp dòng trống liên tiếp thành 1</button>
+        <button data-tool="blank-remove">Xóa mọi dòng trống</button>
+        <div class="label">Hoa / thường</div>
+        <button data-tool="upper">CHỮ HOA</button>
+        <button data-tool="lower">chữ thường</button>
+        <button data-tool="title">Hoa Đầu Mỗi Từ</button>
+        <div class="label">Bỏ dấu tiếng Việt</div>
+        <button data-tool="strip">Bỏ dấu (giữ nguyên chữ)</button>
+        <button data-tool="slug">Slug → ten-san-pham</button>
+        <button data-tool="sku">SKU → TEN-SAN-PHAM</button>
+        <div class="label">Gộp dòng</div>
+        <button data-tool="join">Gộp các dòng, cách nhau dấu phẩy</button>
+      </div>
+    </div>
+
+    <span class="grow"></span>
+    <button id="theme" title="Sáng / tối">Giao diện</button>
+    <input type="file" id="file" accept=".txt,.md,.csv,.json,.html,.js,.css,.svg,.xml,text/*">
+  </div>
+
+  <div class="findbar" id="findbar" hidden>
+    <input type="text" id="findIn" placeholder="Tìm" autocomplete="off" spellcheck="false">
+    <input type="text" id="replIn" placeholder="Thay bằng" autocomplete="off" spellcheck="false">
+    <button id="optCase" aria-pressed="false" title="Phân biệt hoa/thường">Aa</button>
+    <button id="optRegex" aria-pressed="false" title="Biểu thức chính quy (regex)">.*</button>
+    <button id="fPrev" title="Kết quả trước (Shift+F3)">↑</button>
+    <button id="fNext" title="Kết quả sau (F3 / Enter)">↓</button>
+    <button id="rOne" title="Thay kết quả đang chọn">Thay</button>
+    <button id="rAll" title="Thay tất cả">Thay tất cả</button>
+    <span id="fCount"></span>
+    <span class="grow"></span>
+    <button id="fClose" title="Đóng (Esc)">✕</button>
+  </div>
+
+  <div class="workspace">
+    <div id="gutter" aria-hidden="true"><div id="gutterInner"></div></div>
+    <textarea id="editor" spellcheck="false" autocomplete="off" autocapitalize="off" placeholder="Bắt đầu gõ…" autofocus></textarea>
+    <div id="mirror" aria-hidden="true"></div>
+  </div>
+
+  <div class="status">
+    <span id="stats">0 từ · 0 ký tự</span>
+    <span id="pos">Dòng 1, cột 1</span>
+    <span id="msg"></span>
+    <span class="grow"></span>
+    <button id="toggleBar" aria-pressed="false" title="Hiện / ẩn thanh công cụ">⚙ Công cụ</button>
+  </div>
+
+  <div id="printArea" aria-hidden="true"></div>
+
+<script>
+(() => {
+  const $ = id => document.getElementById(id);
+  const ed = $('editor'), gutter = $('gutter'), gin = $('gutterInner'), mirror = $('mirror');
+  const root = document.documentElement;
+
+  /* ---------- Cài đặt giao diện (KHÔNG lưu nội dung) ---------- */
+  const PREF = 'gedit:prefs', OLD = 'gedit:v1';
+  const store = {
+    get(k) { try { return JSON.parse(localStorage.getItem(k)); } catch { return null; } },
+    set(k, v) { try { localStorage.setItem(k, JSON.stringify(v)); } catch {} },
+    del(k) { try { localStorage.removeItem(k); } catch {} }
+  };
+  const old = store.get(OLD);               // bản cũ từng lưu cả nội dung → chuyển cài đặt, xóa nội dung
+  const migrated = {};
+  if (old && typeof old === 'object')
+    ['size', 'mono', 'wrap', 'theme'].forEach(k => { if (k in old) migrated[k] = old[k]; });
+  store.del(OLD);
+  const prefs = Object.assign(
+    { size: 20, mono: true, wrap: true, lines: true,
+      theme: matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light' },
+    migrated, store.get(PREF) || {}
+  );
+  const savePrefs = () => store.set(PREF, prefs);
+
+  const LH = 1.6;
+  const lineH = () => prefs.size * LH;
+
+  function applyView() {
+    root.dataset.theme = prefs.theme;
+    root.dataset.font = prefs.mono ? 'mono' : 'sans';
+    root.style.setProperty('--fs', prefs.size + 'px');
+    root.style.setProperty('--lh', lineH() + 'px');
+    ed.wrap = prefs.wrap ? 'soft' : 'off';
+    ed.classList.toggle('nowrap', !prefs.wrap);
+    gutter.hidden = !prefs.lines;
+    $('sizeLabel').textContent = prefs.size + 'px';
+    $('mono').setAttribute('aria-pressed', prefs.mono);
+    $('wrap').setAttribute('aria-pressed', prefs.wrap);
+    $('lines').setAttribute('aria-pressed', prefs.lines);
+    schedGutter();
+  }
+
+  /* ---------- Thông báo nhỏ ---------- */
+  let msgTimer;
+  function flash(t) {
+    $('msg').textContent = t;
+    clearTimeout(msgTimer);
+    msgTimer = setTimeout(() => $('msg').textContent = '', 2800);
+  }
+
+  /* ---------- Cột số dòng (đo bằng mirror để khớp khi xuống dòng) ---------- */
+  function setMirrorWidth() {
+    const cs = getComputedStyle(ed);
+    const w = ed.clientWidth - parseFloat(cs.paddingLeft) - parseFloat(cs.paddingRight);
+    mirror.style.width = Math.max(w, 1) + 'px';
+    mirror.style.whiteSpace = prefs.wrap ? 'pre-wrap' : 'pre';
+    return w > 0;
+  }
+
+  let gKey = '', rafId = 0;
+  function renderGutter() {
+    if (!prefs.lines) return;
+    const lines = ed.value.split('\n'), n = lines.length, lh = lineH();
+    let hs = null;
+    if (prefs.wrap && n <= 20000 && setMirrorWidth()) {
+      const frag = document.createDocumentFragment();
+      for (const l of lines) { const d = document.createElement('div'); d.textContent = l || '\u200b'; frag.appendChild(d); }
+      mirror.replaceChildren(frag);
+      hs = Array.from(mirror.children, c => Math.max(1, Math.round(c.getBoundingClientRect().height / lh)));
+      mirror.replaceChildren();
+    }
+    const key = n + '|' + lh + '|' + (hs ? hs.join(',') : '');
+    if (key !== gKey) {
+      gKey = key;
+      let h = '';
+      for (let i = 0; i < n; i++) {
+        const k = hs ? hs[i] : 1;
+        h += k === 1 ? `<div class="ln">${i + 1}</div>` : `<div class="ln" style="height:${k * lh}px">${i + 1}</div>`;
+      }
+      gin.innerHTML = h;
+      gutter.style.width = `calc(${String(n).length}ch + 22px)`;
+    }
+    gutter.scrollTop = ed.scrollTop;
+  }
+  function schedGutter() { cancelAnimationFrame(rafId); rafId = requestAnimationFrame(renderGutter); }
+  ed.addEventListener('scroll', () => { gutter.scrollTop = ed.scrollTop; });
+  new ResizeObserver(schedGutter).observe(ed);
+
+  /* ---------- Thống kê, tiêu đề tab ---------- */
+  function updateStats() {
+    const t = ed.value;
+    const words = (t.trim().match(/\S+/g) || []).length;
+    $('stats').textContent = `${words.toLocaleString('vi-VN')} từ · ${t.length.toLocaleString('vi-VN')} ký tự`;
+    const before = t.slice(0, ed.selectionStart).split('\n');
+    const sel = ed.selectionEnd - ed.selectionStart;
+    $('pos').textContent = `Dòng ${before.length}, cột ${before[before.length - 1].length + 1}` +
+      (sel ? ` · đã chọn ${sel.toLocaleString('vi-VN')}` : '');
+  }
+  let titleTimer;
+  function updateTitle() {
+    clearTimeout(titleTimer);
+    titleTimer = setTimeout(() => {
+      const first = (ed.value.split('\n').find(l => l.trim()) || '').trim().slice(0, 28);
+      document.title = first ? first + ' – Gedit' : 'Gedit';
+    }, 300);
+  }
+  ed.addEventListener('input', () => {
+    updateStats(); updateTitle(); schedGutter();
+    if (!$('findbar').hidden) updateFindCount();
+  });
+  ['keyup', 'click', 'select', 'focus'].forEach(e => ed.addEventListener(e, updateStats));
+
+  /* ---------- Thay nội dung nhưng vẫn Ctrl+Z được ---------- */
+  function replaceRange(s, e, txt) {
+    ed.focus();
+    ed.setSelectionRange(s, e);
+    const before = ed.value;
+    const expected = before.slice(0, s) + txt + before.slice(e);
+    let ok = false;
+    try { ok = txt === '' ? (s < e ? document.execCommand('delete') : true) : document.execCommand('insertText', false, txt); } catch {}
+    if (!ok || ed.value !== expected) {          // dự phòng (mất lịch sử hoàn tác)
+      ed.value = expected;
+      ed.dispatchEvent(new Event('input', { bubbles: true }));
+    }
+  }
+
+  // Phím Tab chèn dấu tab thay vì nhảy khỏi ô soạn thảo
+  ed.addEventListener('keydown', e => {
+    if (e.key === 'Tab' && !e.shiftKey) { e.preventDefault(); document.execCommand('insertText', false, '\t'); }
+  });
+
+  /* ---------- Menu thả xuống ---------- */
+  const closeMenus = () => document.querySelectorAll('.dropdown').forEach(d => d.hidden = true);
+  document.querySelectorAll('[data-menu]').forEach(b => b.addEventListener('click', e => {
+    e.stopPropagation();
+    const dd = b.nextElementSibling, willOpen = dd.hidden;
+    closeMenus(); dd.hidden = !willOpen;
+  }));
+  document.addEventListener('click', closeMenus);
+
+  /* ---------- Xử lý văn bản ---------- */
+  const noAccent = s => s.normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/đ/g, 'd').replace(/Đ/g, 'D');
+  const slug = s => noAccent(s).toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '');
+  const perLine = f => t => t.split('\n').map(f).join('\n');
+  const TOOLS = {
+    'blank-collapse': t => {
+      const out = []; let prev = false;
+      for (const l of t.split('\n')) { const b = !l.trim(); if (b && prev) continue; out.push(b ? '' : l); prev = b; }
+      return out.join('\n');
+    },
+    'blank-remove': t => t.split('\n').filter(l => l.trim()).join('\n'),
+    upper: t => t.toLocaleUpperCase('vi'),
+    lower: t => t.toLocaleLowerCase('vi'),
+    title: t => t.toLocaleLowerCase('vi').replace(/(^|[^\p{L}\p{N}'’])(\p{L})/gu, (m, a, b) => a + b.toLocaleUpperCase('vi')),
+    strip: noAccent,
+    slug: perLine(slug),
+    sku: perLine(l => slug(l).toUpperCase()),
+    join: t => t.split('\n').map(l => l.trim()).filter(Boolean).join(', ')
+  };
+  const TOOL_LABEL = {
+    'blank-collapse': 'Đã gộp dòng trống', 'blank-remove': 'Đã xóa dòng trống', upper: 'Đã đổi sang chữ hoa',
+    lower: 'Đã đổi sang chữ thường', title: 'Đã viết hoa đầu mỗi từ', strip: 'Đã bỏ dấu',
+    slug: 'Đã tạo slug', sku: 'Đã tạo SKU', join: 'Đã gộp các dòng'
+  };
+  function runTool(name) {
+    const hasSel = ed.selectionStart !== ed.selectionEnd;
+    const s = hasSel ? ed.selectionStart : 0, e = hasSel ? ed.selectionEnd : ed.value.length;
+    const src = ed.value.slice(s, e), out = TOOLS[name](src);
+    if (out === src) { flash('Không có gì thay đổi'); return; }
+    const caret = ed.selectionStart;
+    replaceRange(s, e, out);
+    if (hasSel) ed.setSelectionRange(s, s + out.length);
+    else { const c = Math.min(caret, out.length); ed.setSelectionRange(c, c); }
+    flash(TOOL_LABEL[name] + (hasSel ? ' (vùng chọn)' : '') + ' — Ctrl+Z để hoàn tác');
+  }
+  document.querySelectorAll('[data-tool]').forEach(b => b.addEventListener('click', () => runTool(b.dataset.tool)));
+
+  /* ---------- Xuất / in ---------- */
+  const esc = s => s.replace(/[&<>]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;' }[c]));
+  function fileBase() {
+    const first = (ed.value.split('\n').find(l => l.trim()) || '').slice(0, 40);
+    return first.replace(/[\\/:*?"<>|]+/g, '').trim() || 'ghi-chu';
+  }
+  function download(content, name, type) {
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(new Blob([content], { type: type + ';charset=utf-8' }));
+    a.download = name;
+    document.body.appendChild(a); a.click(); a.remove();
+    setTimeout(() => URL.revokeObjectURL(a.href), 1000);
+  }
+  function doExport(kind) {
+    const base = fileBase(), text = ed.value;
+    if (kind === 'txt') download(text, base + '.txt', 'text/plain');
+    else if (kind === 'md') download(text, base + '.md', 'text/markdown');
+    else if (kind === 'html') {
+      const html = '<!DOCTYPE html>\n<html lang="vi">\n<head>\n<meta charset="UTF-8">\n' +
+        '<meta name="viewport" content="width=device-width, initial-scale=1">\n' +
+        '<title>' + esc(base) + '</title>\n' +
+        '<style>body{max-width:820px;margin:2rem auto;padding:0 1rem;font:16px/1.7 system-ui,sans-serif;color:#1d1d1b}' +
+        'pre{white-space:pre-wrap;overflow-wrap:break-word;font:inherit}</style>\n</head>\n<body>\n<pre>' +
+        esc(text) + '</pre>\n</body>\n</html>\n';
+      download(html, base + '.html', 'text/html');
+    } else if (kind === 'print') window.print();
+  }
+  document.querySelectorAll('[data-export]').forEach(b => b.addEventListener('click', () => doExport(b.dataset.export)));
+  addEventListener('beforeprint', () => { $('printArea').textContent = ed.value; });
+  addEventListener('afterprint', () => { $('printArea').textContent = ''; });
+
+  /* ---------- Mở / sao chép / xóa ---------- */
+  $('open').onclick = () => $('file').click();
+  $('file').onchange = e => {
+    const f = e.target.files[0]; if (!f) return;
+    const r = new FileReader();
+    r.onload = () => { ed.value = r.result; ed.dispatchEvent(new Event('input', { bubbles: true })); ed.scrollTop = 0; ed.setSelectionRange(0, 0); ed.focus(); };
+    r.readAsText(f, 'utf-8');
+    e.target.value = '';
+  };
+  $('copy').onclick = async () => {
+    try { await navigator.clipboard.writeText(ed.value); }
+    catch { ed.select(); document.execCommand('copy'); }
+    flash('Đã sao chép');
+  };
+  $('clear').onclick = () => {
+    if (ed.value && !confirm('Xóa toàn bộ nội dung?')) return;
+    replaceRange(0, ed.value.length, ''); ed.focus();
+  };
+
+  /* ---------- Nút cài đặt ---------- */
+  $('smaller').onclick = () => { prefs.size = Math.max(10, prefs.size - 2); applyView(); savePrefs(); };
+  $('bigger').onclick = () => { prefs.size = Math.min(60, prefs.size + 2); applyView(); savePrefs(); };
+  $('mono').onclick = () => { prefs.mono = !prefs.mono; applyView(); savePrefs(); };
+  $('wrap').onclick = () => { prefs.wrap = !prefs.wrap; applyView(); savePrefs(); };
+  $('lines').onclick = () => { prefs.lines = !prefs.lines; applyView(); savePrefs(); };
+  $('theme').onclick = () => { prefs.theme = prefs.theme === 'dark' ? 'light' : 'dark'; applyView(); savePrefs(); };
+
+  // Thanh công cụ: luôn ẩn khi mở trang, không ghi nhớ
+  $('toggleBar').onclick = () => {
+    const bar = $('toolbar'); bar.hidden = !bar.hidden;
+    $('toggleBar').setAttribute('aria-pressed', !bar.hidden);
+    if (bar.hidden) { closeMenus(); ed.focus(); }
+  };
+
+  /* ---------- Tìm và thay thế ---------- */
+  const isOn = id => $(id).getAttribute('aria-pressed') === 'true';
+  const flip = id => { $(id).setAttribute('aria-pressed', !isOn(id)); updateFindCount(); };
+  $('optCase').onclick = () => flip('optCase');
+  $('optRegex').onclick = () => flip('optRegex');
+
+  function getRe() {
+    const src = $('findIn').value;
+    if (!src) return null;
+    const p = isOn('optRegex') ? src : src.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+    const fl = 'g' + (isOn('optCase') ? '' : 'i');
+    try { return new RegExp(p, fl + 'u'); } catch {}
+    try { return new RegExp(p, fl); } catch { return false; }
+  }
+  function allMatches(re, text) {
+    const out = []; re.lastIndex = 0; let m;
+    while ((m = re.exec(text))) {
+      if (m[0] === '') { re.lastIndex++; continue; }
+      out.push({ i: m.index, len: m[0].length });
+      if (out.length >= 100000) break;
+    }
+    return out;
+  }
+  function updateFindCount() {
+    const re = getRe(), c = $('fCount');
+    if (re === null) { c.textContent = ''; return; }
+    if (re === false) { c.textContent = 'Regex lỗi'; return; }
+    const ms = allMatches(re, ed.value);
+    if (!ms.length) { c.textContent = 'Không thấy'; return; }
+    const s = ed.selectionStart, e = ed.selectionEnd;
+    const idx = ms.findIndex(x => x.i === s && x.len === e - s);
+    c.textContent = idx >= 0 ? `${idx + 1}/${ms.length}` : `${ms.length} kết quả`;
+  }
+  function scrollToIndex(idx) {
+    if (!setMirrorWidth()) return;
+    mirror.textContent = ed.value.slice(0, idx);
+    const sp = document.createElement('span'); sp.textContent = '\u200b'; mirror.appendChild(sp);
+    const y = sp.offsetTop + parseFloat(getComputedStyle(ed).paddingTop);
+    mirror.replaceChildren();
+    const lh = lineH();
+    if (y < ed.scrollTop + lh || y > ed.scrollTop + ed.clientHeight - 3 * lh)
+      ed.scrollTop = Math.max(0, y - ed.clientHeight / 3);
+  }
+  function step(dir) {
+    const re = getRe();
+    if (!re) { updateFindCount(); return false; }
+    const ms = allMatches(re, ed.value);
+    if (!ms.length) { updateFindCount(); return false; }
+    const s = ed.selectionStart, e = ed.selectionEnd; let m;
+    if (dir > 0) m = ms.find(x => x.i >= e) || ms[0];
+    else { for (let k = ms.length - 1; k >= 0; k--) if (ms[k].i < s) { m = ms[k]; break; } m = m || ms[ms.length - 1]; }
+    ed.focus(); ed.setSelectionRange(m.i, m.i + m.len); scrollToIndex(m.i);
+    updateFindCount(); updateStats();
+    return true;
+  }
+  const replArg = () => {
+    const v = $('replIn').value;
+    return isOn('optRegex') ? v.replace(/\\n/g, '\n').replace(/\\t/g, '\t') : () => v;
+  };
+  function replaceOne() {
+    const re = getRe(); if (!re) return;
+    const s = ed.selectionStart, e = ed.selectionEnd, text = ed.value;
+    const cur = allMatches(re, text).find(x => x.i === s && x.len === e - s);
+    if (cur) {
+      const r = new RegExp(re.source, re.flags.replace('g', '') + 'y'); r.lastIndex = cur.i;
+      const out = text.replace(r, replArg());
+      const seg = out.slice(cur.i, out.length - (text.length - (cur.i + cur.len)));
+      replaceRange(cur.i, cur.i + cur.len, seg);
+      const c = cur.i + seg.length; ed.setSelectionRange(c, c);
+    }
+    step(1);
+  }
+  function replaceAll() {
+    const re = getRe(); if (!re) { flash('Chưa có nội dung cần tìm'); return; }
+    const text = ed.value, n = allMatches(re, text).length;
+    if (!n) { flash('Không tìm thấy'); return; }
+    replaceRange(0, text.length, text.replace(re, replArg()));
+    ed.setSelectionRange(0, 0); ed.scrollTop = 0;
+    flash(`Đã thay ${n} chỗ — Ctrl+Z để hoàn tác`); updateFindCount();
+  }
+  function openFind() {
+    const sel = ed.value.slice(ed.selectionStart, ed.selectionEnd);
+    $('findbar').hidden = false;
+    if (sel && !sel.includes('\n')) $('findIn').value = sel;
+    $('findIn').focus(); $('findIn').select(); updateFindCount();
+  }
+  function closeFind() { $('findbar').hidden = true; ed.focus(); }
+
+  $('findBtn').onclick = () => $('findbar').hidden ? openFind() : closeFind();
+  $('fClose').onclick = closeFind;
+  $('fNext').onclick = () => step(1);
+  $('fPrev').onclick = () => step(-1);
+  $('rOne').onclick = replaceOne;
+  $('rAll').onclick = replaceAll;
+  $('findIn').addEventListener('input', updateFindCount);
+  $('findIn').addEventListener('keydown', e => { if (e.key === 'Enter') { e.preventDefault(); step(e.shiftKey ? -1 : 1); } });
+  $('replIn').addEventListener('keydown', e => { if (e.key === 'Enter') { e.preventDefault(); replaceOne(); } });
+
+  /* ---------- Phím tắt ---------- */
+  document.addEventListener('keydown', e => {
+    const mod = e.ctrlKey || e.metaKey, k = e.key.toLowerCase();
+    if (mod && k === 's') { e.preventDefault(); doExport('txt'); }
+    else if (mod && k === 'o') { e.preventDefault(); $('file').click(); }
+    else if (mod && k === 'h') { e.preventDefault(); openFind(); }
+    else if (e.key === 'F3') { e.preventDefault(); step(e.shiftKey ? -1 : 1); }
+    else if (e.key === 'Escape') { closeMenus(); if (!$('findbar').hidden) closeFind(); }
+  });
+
+  applyView();
+  updateStats();
+})();
+</script>
+</body>
+</html>
