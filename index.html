@@ -1,0 +1,251 @@
+<!doctype html>
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>web-gui · Danh sách công cụ</title>
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🧭</text></svg>">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@400;500;600;800&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#e9eff6; --surface:#ffffff; --surface2:#f1f5fa; --ink:#12203b; --muted:#5d6b85;
+  --line:#d5deea; --accent:#2457e6; --accent-ink:#ffffff; --ok:#12805c; --shadow:0 10px 30px -14px rgba(18,32,59,.35);
+  color-scheme:light;
+}
+@media (prefers-color-scheme:dark){
+  :root:not([data-theme="light"]){
+    --bg:#0f1a2e; --surface:#172544; --surface2:#1d2d50; --ink:#e8eefb; --muted:#9bacc9;
+    --line:#2a3b61; --accent:#6f95ff; --accent-ink:#0b1630; --ok:#4cd0a0; --shadow:0 10px 30px -14px rgba(0,0,0,.7);
+    color-scheme:dark;
+  }
+}
+*{box-sizing:border-box}
+html{height:100%}
+body{margin:0;min-height:100%;background:var(--bg);color:var(--ink);
+  font-family:"Be Vietnam Pro",system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;line-height:1.5;
+  padding:env(safe-area-inset-top,0) 0 env(safe-area-inset-bottom,0)}
+.wrap{max-width:980px;margin:0 auto;padding:40px 20px 64px}
+
+/* Phần đầu: tiêu đề + nút Scan */
+.hero{display:grid;grid-template-columns:1fr auto;gap:28px;align-items:center;
+  background:var(--surface);border:1px solid var(--line);border-radius:28px;padding:32px 34px;box-shadow:var(--shadow)}
+h1{margin:0;font-size:clamp(30px,5vw,46px);font-weight:800;letter-spacing:-.02em;line-height:1.1}
+.sub{margin:10px 0 0;color:var(--muted);font-size:15px;max-width:44ch}
+.scan{position:relative;width:132px;height:132px;border-radius:50%;border:0;cursor:pointer;
+  background:var(--accent);color:var(--accent-ink);font:600 15px/1 inherit;font-family:inherit;
+  display:grid;place-items:center;align-content:center;gap:6px;
+  box-shadow:0 0 0 8px color-mix(in srgb,var(--accent) 16%,transparent),0 14px 28px -10px var(--accent)}
+.scan svg{width:38px;height:38px}
+.scan:focus-visible,.btn:focus-visible,.row:focus-visible,input:focus-visible{outline:3px solid var(--accent);outline-offset:3px}
+.scan:active{transform:scale(.97)}
+.scan[disabled]{cursor:progress}
+.scan.busy .sweep{animation:spin 1.1s linear infinite;transform-origin:50% 50%}
+@keyframes spin{to{transform:rotate(360deg)}}
+@media (prefers-reduced-motion:reduce){.scan.busy .sweep{animation:none}}
+
+.bar{margin:18px 0 0;padding:14px 18px;border-radius:16px;background:var(--surface);border:1px solid var(--line);
+  display:flex;flex-wrap:wrap;gap:12px;align-items:center;justify-content:space-between;font-size:14px}
+.bar.ok{border-color:var(--ok)}
+.bar.err{border-color:#d2473a}
+.btn{font:600 14px inherit;font-family:inherit;border:1px solid var(--line);background:var(--surface2);color:var(--ink);
+  border-radius:12px;padding:9px 14px;cursor:pointer}
+.btn.primary{background:var(--accent);color:var(--accent-ink);border-color:transparent}
+
+.tools{display:flex;gap:14px;align-items:center;justify-content:space-between;margin:30px 4px 14px;flex-wrap:wrap}
+.tools h2{margin:0;font-size:18px;font-weight:600}
+.tools h2 span{color:var(--muted);font-weight:400;margin-left:6px}
+input[type=search]{font:400 15px inherit;font-family:inherit;color:var(--ink);background:var(--surface);
+  border:1px solid var(--line);border-radius:12px;padding:10px 14px;width:min(100%,260px)}
+
+/* Danh sách */
+.list{list-style:none;margin:0;padding:0;display:grid;grid-template-columns:repeat(2,1fr);gap:14px}
+.row{display:grid;grid-template-columns:64px 1fr auto;gap:16px;align-items:center;text-decoration:none;color:inherit;
+  background:var(--surface);border:1px solid var(--line);border-radius:20px;padding:14px 16px 14px 14px;
+  transition:border-color .15s,transform .15s}
+.row:hover{border-color:var(--accent);transform:translateY(-2px)}
+.ico{width:64px;height:64px;border-radius:18px;display:grid;place-items:center;font-size:32px;overflow:hidden;
+  background:linear-gradient(145deg,hsl(var(--h,220) 82% 64%),hsl(calc(var(--h,220) + 38) 76% 46%))}
+.ico img{width:100%;height:100%;object-fit:contain;background:var(--surface2)}
+.name{font-weight:600;font-size:16px;overflow-wrap:anywhere}
+.name em{font-style:normal;font-size:12px;font-weight:600;color:var(--accent-ink);background:var(--ok);border-radius:99px;padding:1px 8px;margin-left:8px}
+.url{font-size:12.5px;color:var(--muted);overflow-wrap:anywhere}
+.copy{align-self:center}
+.empty{grid-column:1/-1;text-align:center;color:var(--muted);padding:36px 12px;background:var(--surface);border:1px dashed var(--line);border-radius:20px}
+.foot{margin-top:28px;color:var(--muted);font-size:13px;text-align:center}
+@media (max-width:720px){
+  .hero{grid-template-columns:1fr;padding:24px}
+  .scan{justify-self:start}
+  .list{grid-template-columns:1fr}
+}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header class="hero">
+    <div>
+      <h1>Công cụ web-gui</h1>
+      <p class="sub" id="sub"></p>
+    </div>
+    <button class="scan" id="scan" type="button" aria-label="Quét thư mục">
+      <svg viewBox="0 0 48 48" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" aria-hidden="true">
+        <circle cx="24" cy="24" r="19" opacity=".45"/><circle cx="24" cy="24" r="11" opacity=".7"/>
+        <g class="sweep"><path d="M24 24 L24 5"/><circle cx="24" cy="24" r="3" fill="currentColor"/></g>
+      </svg>
+      <span id="scanLabel">Scan</span>
+    </button>
+  </header>
+
+  <div class="bar" id="bar" hidden></div>
+
+  <div class="tools">
+    <h2>Trang đã quét<span id="count"></span></h2>
+    <input type="search" id="q" placeholder="Tìm theo tên hoặc file" aria-label="Tìm trang">
+  </div>
+  <ul class="list" id="list"></ul>
+  <p class="foot" id="foot"></p>
+</div>
+
+<script>
+const BASE = "https://user7642.github.io/web-gui/";
+const REPO_API = "https://api.github.com/repos/user7642/web-gui/contents/";
+
+/* Dữ liệu dưới đây được ghi cứng vào file mỗi lần bấm Scan rồi Lưu. Không sửa tay phần giữa hai dấu mốc. */
+/*DATA_START*/
+let DATA = {
+ "scanned": "2026-11-04T00:00:00.000Z",
+ "pages": [
+  {"file":"banner-tool.html","title":"Banner Tool","emoji":"🖼️","hue":196},
+  {"file":"print-preview.html","title":"Print Preview","emoji":"🖨️","hue":262},
+  {"file":"quick-note.html","title":"Quick Note","emoji":"📝","hue":38},
+  {"file":"trim-lines.html","title":"Trim Lines","emoji":"✂️","hue":340}
+ ]
+};
+/*DATA_END*/
+
+const $ = id => document.getElementById(id);
+const esc = s => String(s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const GLYPHS = [[/note|ghi|chu/,"📝"],[/trim|cut|cat/,"✂️"],[/print|in-|preview/,"🖨️"],[/banner|poster|image|anh/,"🖼️"],
+  [/catalog|danh-?muc|list/,"🗂️"],[/calc|tinh/,"🧮"],[/timer|clock|gio/,"⏱️"],[/qr|code/,"🔳"],[/color|mau/,"🎨"]];
+const hashHue = s => [...s].reduce((a,c) => (a*31 + c.charCodeAt(0)) % 360, 7);
+const pretty = f => f.replace(/\.html?$/i,'').replace(/[-_]+/g,' ').replace(/\b\w/g,c => c.toUpperCase());
+
+/* Đọc tiêu đề và icon từ nội dung file html */
+function parseMeta(file, text){
+  const t = (text.match(/<title[^>]*>([^<]*)<\/title>/i) || [])[1];
+  const p = { file, title: (t && t.trim()) || pretty(file), hue: hashHue(file) };
+  const g = GLYPHS.find(([re]) => re.test(file.toLowerCase()));
+  p.emoji = g ? g[1] : "🧩";
+  const link = text.match(/<link[^>]+rel=["'][^"']*icon[^"']*["'][^>]*>/i);
+  const href = link && (link[0].match(/href=["']([^"']+)["']/i) || [])[1];
+  if (href && href.startsWith("data:") && href.length < 30000){
+    let dec = href; try { dec = decodeURIComponent(href); } catch(e){}
+    const em = dec.match(/<text[^>]*>([^<]{1,4})<\/text>/i);
+    if (em) p.emoji = em[1]; else p.img = href;
+  }
+  return p;
+}
+
+function render(){
+  const q = $("q").value.trim().toLowerCase();
+  const pages = DATA.pages.filter(p => !q || (p.title + " " + p.file).toLowerCase().includes(q));
+  $("count").textContent = DATA.pages.length;
+  $("list").innerHTML = pages.length ? pages.map(p => {
+    const url = BASE + p.file;
+    const ico = p.img ? `<span class="ico"><img src="${esc(p.img)}" alt=""></span>` : `<span class="ico" style="--h:${p.hue}">${p.emoji}</span>`;
+    return `<li><a class="row" href="${esc(url)}">${ico}
+      <span><span class="name">${esc(p.title)}${p.isNew ? "<em>mới</em>" : ""}</span><br><span class="url">${esc(url)}</span></span>
+      <button class="btn copy" type="button" data-url="${esc(url)}">Chép link</button></a></li>`;
+  }).join("") : `<li class="empty">Không có trang nào khớp.</li>`;
+  const d = new Date(DATA.scanned).toLocaleString("vi-VN");
+  $("sub").textContent = "Mọi trang trong thư mục, mở bằng một lần bấm. Quét lần cuối: " + d + ".";
+  $("foot").textContent = BASE;
+}
+$("q").addEventListener("input", render);
+$("list").addEventListener("click", e => {
+  const b = e.target.closest(".copy"); if (!b) return;
+  e.preventDefault();
+  (navigator.clipboard ? navigator.clipboard.writeText(b.dataset.url) : Promise.reject()).then(
+    () => { b.textContent = "Đã chép"; setTimeout(() => b.textContent = "Chép link", 1500); },
+    () => prompt("Chép link này:", b.dataset.url));
+});
+
+function bar(html, cls){ const b = $("bar"); b.className = "bar " + (cls || ""); b.innerHTML = html; b.hidden = false; }
+
+function applyScan(pages){
+  const old = new Set(DATA.pages.map(p => p.file));
+  pages.sort((a,b) => a.file.localeCompare(b.file));
+  pages.forEach(p => p.isNew = !old.has(p.file));
+  const gone = [...old].filter(f => !pages.some(p => p.file === f)).length;
+  DATA = { scanned: new Date().toISOString(), pages };
+  render();
+  return { added: pages.filter(p => p.isNew).length, gone };
+}
+
+/* Ghi cứng dữ liệu vào mã nguồn của trang */
+function bake(src){
+  const clean = { scanned: DATA.scanned, pages: DATA.pages.map(({isNew, ...p}) => p) };
+  const json = JSON.stringify(clean, null, 1).replace(/</g, "\\u003c");
+  return src.replace(/\/\*DATA_START\*\/[\s\S]*?\/\*DATA_END\*\//, () => "/*DATA_START*/\nlet DATA = " + json + ";\n/*DATA_END*/");
+}
+async function getSource(){
+  try { const r = await fetch(location.href.split("#")[0], {cache:"no-store"}); if (r.ok) return await r.text(); } catch(e){}
+  const c = document.documentElement.cloneNode(true);
+  c.querySelector("#list").innerHTML = ""; c.querySelector("#bar").innerHTML = ""; c.querySelector("#bar").setAttribute("hidden","");
+  return "<!doctype html>\n" + c.outerHTML;
+}
+function download(text){
+  const a = document.createElement("a");
+  a.href = URL.createObjectURL(new Blob([text], {type:"text/html"}));
+  a.download = "index.html"; a.click();
+}
+
+/* Quét trên máy: chọn thư mục web-gui (Chrome, Edge) */
+async function scanLocal(){
+  const dir = await window.showDirectoryPicker({ mode: "readwrite" });
+  const pages = [];
+  for await (const [name, h] of dir.entries()){
+    if (h.kind === "file" && /\.html?$/i.test(name) && name.toLowerCase() !== "index.html")
+      pages.push(parseMeta(name, await (await h.getFile()).text()));
+  }
+  const r = applyScan(pages);
+  bar(`<span>Thấy <b>${pages.length}</b> trang (${r.added} mới, ${r.gone} đã mất). Lưu để ghi cứng vào index.html.</span>
+       <button class="btn primary" id="save" type="button">Lưu vào index.html</button>`, "ok");
+  $("save").onclick = async () => {
+    const out = bake(await getSource());
+    try {
+      const w = await (await dir.getFileHandle("index.html", {create:true})).createWritable();
+      await w.write(out); await w.close();
+      bar("<span>Đã ghi index.html vào thư mục. Bước tiếp theo: commit và push lên GitHub.</span>", "ok");
+    } catch(e){ download(out); bar("<span>Không ghi trực tiếp được, đã tải index.html về. Chép đè vào thư mục rồi push.</span>", "err"); }
+  };
+}
+
+/* Quét trên GitHub Pages: đọc danh sách file từ GitHub API (repo công khai) */
+async function scanHosted(){
+  const r = await fetch(REPO_API);
+  if (!r.ok) throw new Error("GitHub API trả về mã " + r.status + (r.status === 403 ? " (hết lượt gọi, thử lại sau ít phút)" : ""));
+  const files = (await r.json()).filter(f => f.type === "file" && /\.html?$/i.test(f.name) && f.name.toLowerCase() !== "index.html");
+  const pages = await Promise.all(files.map(async f => {
+    try { return parseMeta(f.name, await (await fetch("./" + f.name)).text()); } catch(e){ return parseMeta(f.name, ""); }
+  }));
+  const res = applyScan(pages);
+  bar(`<span>Thấy <b>${pages.length}</b> trang (${res.added} mới, ${res.gone} đã mất). Danh sách đã cập nhật ngay trên trang này.</span>`, "ok");
+}
+
+$("scan").addEventListener("click", async () => {
+  const btn = $("scan"); btn.disabled = true; btn.classList.add("busy"); $("scanLabel").textContent = "Đang quét";
+  try {
+    if (location.protocol === "file:" || !location.hostname.endsWith("github.io")){
+      if (!window.showDirectoryPicker) throw new Error("Trình duyệt này chưa hỗ trợ chọn thư mục. Hãy mở bằng Chrome hoặc Edge.");
+      await scanLocal();
+    } else await scanHosted();
+  } catch(e){
+    if (e && e.name !== "AbortError") bar("<span>" + esc(e.message || e) + "</span>", "err");
+  } finally { btn.disabled = false; btn.classList.remove("busy"); $("scanLabel").textContent = "Scan"; }
+});
+
+render();
+</script>
+</body>
+</html>
