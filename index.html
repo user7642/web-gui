@@ -1,12 +1,11 @@
 <!doctype html>
-<html lang="vi">
-<head>
+<html lang="vi"><head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>web-gui · Danh sách công cụ</title>
-<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🧭</text></svg>">
+<link rel="icon" href="data:image/svg+xml,&lt;svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'&gt;&lt;text y='.9em' font-size='90'&gt;🧭&lt;/text&gt;&lt;/svg&gt;">
 <link rel="preconnect" href="https://fonts.googleapis.com">
-<link href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@400;500;600;800&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@400;500;600;800&amp;display=swap" rel="stylesheet">
 <style>
 :root{
   --bg:#e9eff6; --surface:#ffffff; --surface2:#f1f5fa; --ink:#12203b; --muted:#5d6b85;
@@ -85,25 +84,25 @@ input[type=search]{font:400 15px inherit;font-family:inherit;color:var(--ink);ba
   <header class="hero">
     <div>
       <h1>Công cụ web-gui</h1>
-      <p class="sub" id="sub"></p>
+      <p class="sub" id="sub">Mọi trang trong thư mục, mở bằng một lần bấm. Quét lần cuối: 17:50:45 4/11/2026.</p>
     </div>
     <button class="scan" id="scan" type="button" aria-label="Quét thư mục">
       <svg viewBox="0 0 48 48" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" aria-hidden="true">
-        <circle cx="24" cy="24" r="19" opacity=".45"/><circle cx="24" cy="24" r="11" opacity=".7"/>
-        <g class="sweep"><path d="M24 24 L24 5"/><circle cx="24" cy="24" r="3" fill="currentColor"/></g>
+        <circle cx="24" cy="24" r="19" opacity=".45"></circle><circle cx="24" cy="24" r="11" opacity=".7"></circle>
+        <g class="sweep"><path d="M24 24 L24 5"></path><circle cx="24" cy="24" r="3" fill="currentColor"></circle></g>
       </svg>
       <span id="scanLabel">Scan</span>
     </button>
   </header>
 
-  <div class="bar" id="bar" hidden></div>
+  <div class="bar ok" id="bar" hidden=""></div>
 
   <div class="tools">
-    <h2>Trang đã quét<span id="count"></span></h2>
+    <h2>Trang đã quét<span id="count">4</span></h2>
     <input type="search" id="q" placeholder="Tìm theo tên hoặc file" aria-label="Tìm trang">
   </div>
   <ul class="list" id="list"></ul>
-  <p class="foot" id="foot"></p>
+  <p class="foot" id="foot">https://user7642.github.io/web-gui/</p>
 </div>
 
 <script>
@@ -113,12 +112,34 @@ const REPO_API = "https://api.github.com/repos/user7642/web-gui/contents/";
 /* Dữ liệu dưới đây được ghi cứng vào file mỗi lần bấm Scan rồi Lưu. Không sửa tay phần giữa hai dấu mốc. */
 /*DATA_START*/
 let DATA = {
- "scanned": "2026-11-04T00:00:00.000Z",
+ "scanned": "2026-11-04T10:50:45.678Z",
  "pages": [
-  {"file":"banner-tool.html","title":"Banner Tool","emoji":"🖼️","hue":196},
-  {"file":"print-preview.html","title":"Print Preview","emoji":"🖨️","hue":262},
-  {"file":"quick-note.html","title":"Quick Note","emoji":"📝","hue":38},
-  {"file":"trim-lines.html","title":"Trim Lines","emoji":"✂️","hue":340}
+  {
+   "file": "banner-tool.html",
+   "title": "Banner Studio – ảnh bìa sản phẩm",
+   "hue": 111,
+   "emoji": "🖼️"
+  },
+  {
+   "file": "print-preview.html",
+   "title": "Xem trước khổ in",
+   "hue": 272,
+   "emoji": "🖨️",
+   "img": "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='14' fill='%232563eb'/%3E%3Cpath d='M20 10h19l11 11v31a3 3 0 0 1-3 3H20a3 3 0 0 1-3-3V13a3 3 0 0 1 3-3z' fill='%23fff'/%3E%3Cpath d='M39 10v11h11z' fill='%23bcd0fb'/%3E%3Cpath d='M24 31h18M24 38h18M24 45h11' stroke='%232563eb' stroke-width='3.5' stroke-linecap='round'/%3E%3C/svg%3E"
+  },
+  {
+   "file": "quick-note.html",
+   "title": "QuickNote",
+   "hue": 224,
+   "emoji": "📝",
+   "img": "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='12' fill='%232b2b2b'/%3E%3Cpath d='M18 44 L40 22 L46 28 L24 50 L16 52 Z' fill='%23e8e8e8'/%3E%3Cpath d='M40 22 L46 28' stroke='%23555' stroke-width='2'/%3E%3C/svg%3E"
+  },
+  {
+   "file": "trim-lines.html",
+   "title": "Xóa Dòng Trống — Text Tool",
+   "hue": 198,
+   "emoji": "✂️"
+  }
  ]
 };
 /*DATA_END*/
@@ -136,8 +157,9 @@ function parseMeta(file, text){
   const p = { file, title: (t && t.trim()) || pretty(file), hue: hashHue(file) };
   const g = GLYPHS.find(([re]) => re.test(file.toLowerCase()));
   p.emoji = g ? g[1] : "🧩";
-  const link = text.match(/<link[^>]+rel=["'][^"']*icon[^"']*["'][^>]*>/i);
-  const href = link && (link[0].match(/href=["']([^"']+)["']/i) || [])[1];
+  const tags = text.match(/<link\b(?:"[^"]*"|'[^']*'|[^>"'])*>/gi) || [];
+  const link = tags.find(t => /\brel\s*=\s*["'][^"']*icon/i.test(t));
+  const href = link && (link.match(/\bhref\s*=\s*(["'])([\s\S]*?)\1/i) || [])[2];
   if (href && href.startsWith("data:") && href.length < 30000){
     let dec = href; try { dec = decodeURIComponent(href); } catch(e){}
     const em = dec.match(/<text[^>]*>([^<]{1,4})<\/text>/i);
@@ -153,8 +175,8 @@ function render(){
   $("list").innerHTML = pages.length ? pages.map(p => {
     const url = BASE + p.file;
     const ico = p.img ? `<span class="ico"><img src="${esc(p.img)}" alt=""></span>` : `<span class="ico" style="--h:${p.hue}">${p.emoji}</span>`;
-    return `<li><a class="row" href="${esc(url)}">${ico}
-      <span><span class="name">${esc(p.title)}${p.isNew ? "<em>mới</em>" : ""}</span><br><span class="url">${esc(url)}</span></span>
+    return `<li><a class="row" href="${esc(encodeURI(p.file))}">${ico}
+      <span><span class="name">${esc(p.title)}${p.isNew ? "<em>mới</em>" : ""}</span><br><span class="url">${esc(p.file)}</span></span>
       <button class="btn copy" type="button" data-url="${esc(url)}">Chép link</button></a></li>`;
   }).join("") : `<li class="empty">Không có trang nào khớp.</li>`;
   const d = new Date(DATA.scanned).toLocaleString("vi-VN");
@@ -247,5 +269,6 @@ $("scan").addEventListener("click", async () => {
 
 render();
 </script>
-</body>
-</html>
+
+
+</body></html>
