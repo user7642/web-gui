@@ -1,0 +1,745 @@
+<!doctype html>
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Xem trước khổ in</title>
+<link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='14' fill='%232563eb'/%3E%3Cpath d='M20 10h19l11 11v31a3 3 0 0 1-3 3H20a3 3 0 0 1-3-3V13a3 3 0 0 1 3-3z' fill='%23fff'/%3E%3Cpath d='M39 10v11h11z' fill='%23bcd0fb'/%3E%3Cpath d='M24 31h18M24 38h18M24 45h11' stroke='%232563eb' stroke-width='3.5' stroke-linecap='round'/%3E%3C/svg%3E">
+<style>
+:root{
+  --bg:#eef0f4;--panel:#fff;--ink:#1f2430;--mut:#6b7280;--line:#e3e6ec;
+  --acc:#2563eb;--acc2:#1d4ed8;--accbg:#e8f0ff;
+  --ok:#15803d;--okbg:#e8f7ee;--bad:#c62828;--badbg:#fdecec;--warn:#b45309;--warnbg:#fff4e0;
+  --stage:#d4d8df;
+}
+html[data-bg=white]{--stage:#ffffff}
+html[data-bg=dark]{--stage:#2a2c31}
+*{box-sizing:border-box}
+html,body{height:100%;margin:0}
+body{font:14px/1.45 system-ui,"Segoe UI",Roboto,"Helvetica Neue",Arial,sans-serif;color:var(--ink);background:var(--bg);display:flex;flex-direction:column;overflow:hidden}
+button,select,input{font:inherit;color:inherit}
+.btn{height:36px;padding:0 14px;border:1px solid var(--line);background:#fff;border-radius:9px;font-weight:600;cursor:pointer;transition:.12s;white-space:nowrap}
+.btn:hover{border-color:#c5cbd6;background:#f7f8fb}
+.btn.on{background:var(--acc);color:#fff;border-color:var(--acc)}
+.btn.primary{background:var(--acc);color:#fff;border-color:var(--acc)}
+.btn.primary:hover{background:var(--acc2)}
+/* header */
+#top{flex:none;display:grid;grid-template-columns:1fr auto 1fr;align-items:center;gap:12px;padding:9px 14px;background:#fff;border-bottom:1px solid var(--line)}
+#left{display:flex;align-items:baseline;gap:10px;min-width:0}
+#brand{font-weight:700;font-size:15px;white-space:nowrap}
+#fname{color:var(--mut);font-size:12.5px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+#bar{display:flex;align-items:center;justify-content:center;gap:6px}
+#bar .a{width:54px;padding:0}
+#bar .sp{width:1px;height:22px;background:var(--line);margin:0 6px}
+#bar #fit{width:132px;padding:0}
+#bar.off .btn{opacity:.45;pointer-events:none}
+#right{display:flex;justify-content:flex-end;gap:8px}
+#pbtn{position:relative}
+#dot{display:none;position:absolute;top:-4px;right:-4px;width:11px;height:11px;border-radius:50%;background:var(--bad);border:2px solid #fff}
+/* main */
+#main{flex:1;min-height:0;display:flex}
+#stage{flex:1;min-width:0;overflow:auto;background:var(--stage);position:relative;display:flex;touch-action:pan-x pan-y}
+#holder{margin:auto;padding:36px;flex:none;display:none}
+#sheet{position:relative;background:#fff;box-shadow:0 8px 30px rgba(0,0,0,.30)}
+#sheet.meas{cursor:crosshair}
+#img{display:block;width:100%;height:100%;user-select:none;-webkit-user-drag:none}
+#sheet>div,#sheet>svg{position:absolute;inset:0;pointer-events:none}
+#safe{display:none}
+#safe i{position:absolute;border:1.5px dashed #16a34a}
+#refs .ref{position:absolute;pointer-events:auto;border:2px solid #0284c7;background:rgba(14,165,233,.2);border-radius:6px;cursor:move;display:flex;align-items:center;justify-content:center;text-align:center;font-size:11px;font-weight:700;color:#075985;line-height:1.25;user-select:none}
+#refs .ref small{display:block;font-weight:500}
+#empty{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:14px;text-align:center;padding:24px}
+#empty .big{height:54px;padding:0 34px;font-size:16px;border-radius:12px}
+#empty p{margin:0;color:var(--mut);font-size:13px}
+html[data-bg=dark] #empty p{color:#9aa1ad}
+#loupe{display:none;position:fixed;width:176px;height:176px;border-radius:50%;border:3px solid #fff;box-shadow:0 4px 18px rgba(0,0,0,.45);pointer-events:none;z-index:40;background-color:#fff;background-repeat:no-repeat}
+/* panel */
+#panel{flex:none;width:0;overflow:hidden;background:var(--panel);border-left:0;transition:width .18s ease}
+#panel.open{width:400px;border-left:1px solid var(--line)}
+#pin{width:400px;height:100%;overflow:auto;padding:0 16px 24px}
+.ph{position:sticky;top:0;background:var(--panel);display:flex;justify-content:space-between;align-items:center;padding:12px 0 8px;margin-bottom:2px;border-bottom:1px solid var(--line);z-index:2}
+.ph b{font-size:15px}
+.x{border:0;background:none;font-size:16px;cursor:pointer;color:var(--mut);padding:4px 8px;border-radius:6px}
+.x:hover{background:#f0f2f6}
+.sec h3{font-size:11.5px;letter-spacing:.06em;text-transform:uppercase;color:var(--mut);margin:18px 0 6px}
+.r{display:grid;grid-template-columns:116px 1fr;gap:8px;padding:3px 0;font-size:13px}
+.r .k{color:var(--mut)}
+.r .v{font-weight:600;word-break:break-word}
+.v.ok{color:var(--ok)}.v.bad{color:var(--bad)}.v.warn{color:var(--warn)}
+.note{padding:8px 10px;border-radius:8px;font-size:12.5px;margin-top:8px;line-height:1.45}
+.note.bad{background:var(--badbg);color:var(--bad);border:1px solid #f4c3c3}
+.note.ok{background:var(--okbg);color:var(--ok)}
+.note.warn{background:var(--warnbg);color:var(--warn)}
+.note.info{background:var(--accbg);color:#1e40af}
+.mut{color:var(--mut);font-size:12.5px}
+.tb{width:100%;border-collapse:collapse;font-size:12px}
+.tb th{font-weight:600;color:var(--mut);text-align:right;padding:4px 5px;border-bottom:1px solid var(--line)}
+.tb td{padding:4px 5px;text-align:right;border-bottom:1px solid #f0f2f6;white-space:nowrap}
+.tb th:first-child,.tb td:first-child{text-align:left;font-weight:700}
+.tb tr.cur td{background:var(--accbg)}
+.c-ok{color:var(--ok)}.c-warn{color:var(--warn)}.c-bad{color:var(--bad)}
+.fgrid{display:grid;grid-template-columns:repeat(4,1fr);gap:6px;margin-top:8px}
+.fgrid div{border:1px solid var(--line);border-radius:8px;padding:5px 6px;text-align:center;font-size:12px}
+.fgrid div.cur{background:var(--accbg);border-color:#bcd0fb}
+.fgrid b{display:block;font-size:13px}
+.ck{display:flex;align-items:center;gap:8px;padding:4px 0;font-size:13px}
+.ck input[type=number]{width:62px;height:26px;padding:0 6px;border:1px solid var(--line);border-radius:6px}
+.sel,.num{height:28px;border:1px solid var(--line);border-radius:7px;padding:0 6px;background:#fff}
+.num{width:78px}
+.btns{display:flex;flex-wrap:wrap;gap:6px;margin-top:8px}
+.sb{height:30px;padding:0 10px;border:1px solid var(--line);background:#fff;border-radius:8px;cursor:pointer;font-size:12.5px;font-weight:600}
+.sb:hover{background:#f4f6fa}
+.keys{display:grid;grid-template-columns:auto 1fr;gap:3px 12px;font-size:12.5px;color:var(--mut)}
+.keys kbd{background:#f1f3f7;border:1px solid var(--line);border-radius:5px;padding:0 6px;font:600 11.5px system-ui;color:var(--ink)}
+/* status */
+#status{flex:none;display:flex;align-items:center;justify-content:space-between;gap:12px;padding:6px 14px;background:#fff;border-top:1px solid var(--line);font-size:12.5px;color:var(--mut)}
+#status>div{display:flex;align-items:center;gap:10px;min-width:0}
+#stL{flex:1;overflow:hidden;white-space:nowrap;text-overflow:ellipsis}
+.chip{border:0;border-radius:999px;padding:2px 10px;font-size:12px;font-weight:600;cursor:default}
+.chip.ok{background:var(--okbg);color:var(--ok)}
+.chip.bad{background:var(--badbg);color:var(--bad);cursor:pointer}
+.chip.warn{background:var(--warnbg);color:var(--warn);cursor:pointer}
+/* ctx menu */
+#ctx{position:fixed;display:none;min-width:290px;background:#fff;border:1px solid var(--line);border-radius:11px;box-shadow:0 12px 34px rgba(0,0,0,.22);padding:6px;z-index:60}
+#ctx .mi{display:flex;justify-content:space-between;gap:20px;padding:7px 10px;border-radius:7px;cursor:pointer;font-size:13.5px}
+#ctx .mi:hover{background:var(--accbg)}
+#ctx .mi em{font-style:normal;color:var(--mut);font-size:12px}
+#ctx .mi.dis{opacity:.4;pointer-events:none}
+#ctx hr{border:0;border-top:1px solid var(--line);margin:5px 4px}
+/* modal */
+.modal{position:fixed;inset:0;background:rgba(15,18,26,.5);display:none;align-items:center;justify-content:center;z-index:80;padding:16px}
+.modal .card{background:#fff;border-radius:14px;padding:20px 22px;width:min(900px,96vw);max-height:94vh;overflow:auto}
+.modal h2{margin:0 0 6px;font-size:18px}
+.modal p{margin:4px 0 12px;color:var(--mut);font-size:13.5px}
+#calBox{overflow-x:auto;padding:14px 0}
+#calBar{height:46px;background:var(--acc);border-radius:7px;color:#fff;font-weight:700;display:flex;align-items:center;justify-content:center;font-size:13px;white-space:nowrap}
+.row{display:flex;align-items:center;gap:10px;margin:10px 0;flex-wrap:wrap}
+.row input[type=range]{flex:1;min-width:220px}
+.foot{display:flex;justify-content:flex-end;gap:8px;margin-top:16px}
+</style>
+</head>
+<body>
+
+<header id="top">
+  <div id="left"><img alt="" width="26" height="26" style="align-self:center;border-radius:6px" src="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='14' fill='%232563eb'/%3E%3Cpath d='M20 10h19l11 11v31a3 3 0 0 1-3 3H20a3 3 0 0 1-3-3V13a3 3 0 0 1 3-3z' fill='%23fff'/%3E%3Cpath d='M39 10v11h11z' fill='%23bcd0fb'/%3E%3Cpath d='M24 31h18M24 38h18M24 45h11' stroke='%232563eb' stroke-width='3.5' stroke-linecap='round'/%3E%3C/svg%3E"><span id="brand">Xem trước khổ in</span><span id="fname"></span></div>
+  <div id="bar" class="off"><div id="seg" style="display:flex;gap:6px"></div><span class="sp"></span><button class="btn" id="fit">Vừa màn hình</button></div>
+  <div id="right">
+    <button class="btn" id="up2">⬆ Tải lên</button>
+    <button class="btn" id="pbtn">ⓘ Thông tin<i id="dot"></i></button>
+  </div>
+</header>
+
+<div id="main">
+  <div id="stage">
+    <div id="empty">
+      <button class="btn primary big" id="up1">⬆ Tải bản thiết kế lên</button>
+      <p>Hỗ trợ SVG · PNG · JPG · WEBP · PDF — xử lý hoàn toàn trên máy bạn</p>
+    </div>
+    <div id="holder">
+      <div id="sheet">
+        <img id="img" alt="" draggable="false">
+        <div id="grid"></div>
+        <div id="safe"><i></i></div>
+        <svg id="mv"></svg>
+        <div id="refs"></div>
+      </div>
+    </div>
+  </div>
+  <aside id="panel"><div id="pin"></div></aside>
+</div>
+
+<footer id="status">
+  <div id="stL"></div>
+  <div id="stC"></div>
+  <div id="stR"></div>
+</footer>
+
+<div id="ctx"></div>
+<div id="loupe"></div>
+<input type="file" id="fi" hidden accept=".svg,.png,.jpg,.jpeg,.webp,.pdf,image/*,application/pdf">
+
+<div class="modal" id="cal"><div class="card">
+  <h2>Hiệu chuẩn màn hình</h2>
+  <p>Đặt thẻ ATM / CCCD hoặc thước thật lên màn hình, kéo thanh trượt đến khi thanh xanh dài đúng bằng vật thật. Chỉ cần làm một lần cho mỗi màn hình.</p>
+  <div class="row"><label for="calRef">Vật dùng để đối chiếu:</label>
+    <select id="calRef" class="sel"><option value="85.6">Thẻ ATM / CCCD — cạnh dài 85,6 mm</option><option value="100">Thước — đoạn 10 cm</option></select></div>
+  <div id="calBox"><div id="calBar"></div></div>
+  <div class="row"><button class="btn" id="calM">−</button><input type="range" id="calRange" min="2" max="7" step="0.002"><button class="btn" id="calP">+</button><span>1 cm = <b id="calPx"></b> px</span></div>
+  <details><summary style="cursor:pointer;color:var(--mut);font-size:13px">Cách nhanh: nhập đường chéo màn hình (ước tính)</summary>
+    <div class="row"><input type="number" id="calInch" class="num" step="0.1" placeholder="vd 15,6"> inch <button class="btn" id="calInchGo">Áp dụng</button></div></details>
+  <div class="foot"><button class="btn" id="calReset">Đặt lại 96 dpi</button><button class="btn" id="calCancel">Hủy</button><button class="btn primary" id="calSave">Lưu</button></div>
+</div></div>
+
+<script>
+'use strict';
+/* ===== hằng số & tiện ích ===== */
+const A=[[841,1189],[594,841],[420,594],[297,420],[210,297],[148,210],[105,148]]; // [cạnh ngắn, cạnh dài] mm
+const MMPT=25.4/72, SQ2=Math.SQRT2, TOL=0.005;
+const $=id=>document.getElementById(id);
+const esc=s=>String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const LS={g(k,d){try{const v=localStorage.getItem(k);return v==null?d:JSON.parse(v)}catch(e){return d}},s(k,v){try{localStorage.setItem(k,JSON.stringify(v))}catch(e){}}};
+const nf=(n,d=1)=>Number(n).toLocaleString('vi-VN',{minimumFractionDigits:d,maximumFractionDigits:d});
+const S={url:null,kind:null,name:'',ext:'',bytes:0,pxW:0,pxH:0,mmW:0,mmH:0,vbW:0,vbH:0,basis:'',dpi:96,dpiSrc:'',pages:1,renderDpi:0,txt:null,
+  refForce:null,mode:'fit',k:1,g:null,unit:LS.g('unit','cm'),bg:LS.g('bg','gray'),grid:false,safe:false,safeMM:10,loupe:false,measure:false,
+  lines:[],refs:[],fontPt:28,panel:false,
+  calib:LS.g('calib',null)||{pxPerMM:96/25.4,dpr:devicePixelRatio,done:false}};
+document.documentElement.dataset.bg=S.bg;
+const ppm=()=>S.calib.pxPerMM*S.calib.dpr/devicePixelRatio;   // px CSS trên 1 mm thực, đã bù zoom trình duyệt
+
+function len(mm,unit=true){
+  const u=S.unit;let v;
+  if(u==='cm')v=nf(mm/10,mm<100?2:1);else if(u==='mm')v=nf(mm,0);else v=nf(mm/25.4,2);
+  return unit?v+' '+u:v;
+}
+const dims=(w,h)=>len(w,false)+' × '+len(h,true);
+const sgn=x=>(x>=0?'+':'−')+nf(Math.abs(x)*100,1)+'%';
+
+/* ===== hình học bản gốc ===== */
+function geom(){
+  let w,h;
+  if(S.kind==='raster'){w=S.pxW/S.dpi*25.4;h=S.pxH/S.dpi*25.4}else{w=S.mmW;h=S.mmH}
+  if(S.refForce!=null){const r=A[S.refForce][1]/Math.max(w,h);w*=r;h*=r}   // scale đều, không méo
+  const long=Math.max(w,h),short=Math.min(w,h);
+  let best=0,be=Infinity;
+  A.forEach((a,i)=>{const e=Math.abs(long/a[1]-1)+Math.abs(short/a[0]-1);if(e<be){be=e;best=i}});
+  const ref=S.refForce!=null?S.refForce:best;
+  const eL=long/A[ref][1]-1,eS=short/A[ref][0]-1,ratio=long/short,asp=ratio/SQ2-1;
+  return{w,h,long,short,ref,eL,eS,ratio,asp,ok:Math.abs(eL)<=TOL&&Math.abs(eS)<=TOL,aspOK:Math.abs(asp)<=TOL,land:w>=h};
+}
+const kFor=(i,g)=>A[i][1]/A[g.ref][1];   // hệ số scale đều khổ i so với bản gốc
+
+/* ===== đọc DPI trong file ảnh ===== */
+function readDPI(dv){
+  try{
+    const b=n=>dv.getUint8(n);
+    if(dv.byteLength>8&&b(0)===0x89&&b(1)===0x50){
+      let p=8;
+      while(p+12<=dv.byteLength){
+        const l=dv.getUint32(p),t=String.fromCharCode(b(p+4),b(p+5),b(p+6),b(p+7));
+        if(t==='pHYs'){if(b(p+16)===1){const x=dv.getUint32(p+8);if(x>0)return{dpi:x*0.0254,src:'PNG pHYs'}}return null}
+        if(t==='IDAT')return null;
+        p+=12+l;
+      }
+      return null;
+    }
+    if(b(0)===0xFF&&b(1)===0xD8){
+      let p=2;
+      while(p+4<dv.byteLength){
+        if(b(p)!==0xFF)break;
+        const m=b(p+1),l=dv.getUint16(p+2);
+        if(m===0xE0&&String.fromCharCode(b(p+4),b(p+5),b(p+6),b(p+7))==='JFIF'){
+          const u=b(p+11),x=dv.getUint16(p+12);
+          if(x>1&&u===1)return{dpi:x,src:'JFIF'};
+          if(x>1&&u===2)return{dpi:x*2.54,src:'JFIF'};
+        }
+        if(m===0xE1&&String.fromCharCode(b(p+4),b(p+5),b(p+6),b(p+7))==='Exif'){
+          const t=p+10,le=dv.getUint16(t)===0x4949,g16=o=>dv.getUint16(o,le),g32=o=>dv.getUint32(o,le);
+          const ifd=t+g32(t+4),n=g16(ifd);let xr=null,unit=2;
+          for(let i=0;i<n;i++){const e=ifd+2+i*12,tag=g16(e);
+            if(tag===0x011A){const o=t+g32(e+8);xr=g32(o)/g32(o+4)}
+            if(tag===0x0128)unit=g16(e+8);}
+          if(xr&&xr>1)return{dpi:unit===3?xr*2.54:xr,src:'EXIF'};
+        }
+        if(m===0xDA)break;
+        p+=2+l;
+      }
+    }
+  }catch(e){}
+  return null;
+}
+
+/* ===== nạp file ===== */
+function resetState(){
+  if(S.url){try{URL.revokeObjectURL(S.url)}catch(e){}}
+  Object.assign(S,{url:null,kind:null,pxW:0,pxH:0,mmW:0,mmH:0,vbW:0,vbH:0,basis:'',dpi:96,dpiSrc:'',pages:1,renderDpi:0,txt:null,refForce:null,mode:'fit',lines:[],refs:[],measure:false});
+}
+async function loadSVG(file){
+  const txt=await file.text();
+  const doc=new DOMParser().parseFromString(txt,'image/svg+xml');
+  const root=doc.documentElement;
+  if(!root||root.nodeName.toLowerCase()!=='svg'||doc.querySelector('parsererror'))throw new Error('SVG không hợp lệ');
+  let vb=(root.getAttribute('viewBox')||'').trim().split(/[\s,]+/).map(Number);
+  const hasVB=vb.length===4&&vb.every(isFinite)&&vb[2]>0&&vb[3]>0;
+  const F={px:25.4/96,mm:1,cm:10,in:25.4,pt:25.4/72,pc:25.4/6};
+  const un=v=>{if(!v)return null;const m=/^\s*([\d.]+(?:e[+-]?\d+)?)\s*(px|mm|cm|in|pt|pc|%)?\s*$/i.exec(v);if(!m)return null;const u=(m[2]||'px').toLowerCase();if(u==='%')return null;return{n:parseFloat(m[1]),mm:parseFloat(m[1])*F[u],u}};
+  let w=un(root.getAttribute('width')),h=un(root.getAttribute('height')),basis='thuộc tính width/height';
+  if(!hasVB){
+    if(!w||!h)throw new Error('SVG thiếu cả viewBox lẫn width/height');
+    vb=[0,0,w.n,h.n];root.setAttribute('viewBox','0 0 '+w.n+' '+h.n);
+  }
+  let mmW,mmH;
+  if(w&&h){mmW=w.mm;mmH=h.mm}
+  else if(w){mmW=w.mm;mmH=mmW*vb[3]/vb[2];basis='width + tỷ lệ viewBox'}
+  else if(h){mmH=h.mm;mmW=mmH*vb[2]/vb[3];basis='height + tỷ lệ viewBox'}
+  else{mmW=vb[2]*25.4/96;mmH=vb[3]*25.4/96;basis='viewBox (coi 1 đơn vị = 1 px, 96 dpi)'}
+  S.mmW=mmW;S.mmH=mmH;S.vbW=vb[2];S.vbH=vb[3];S.basis=basis;
+  // quét cỡ chữ
+  try{
+    const clone=document.importNode(root,true);
+    clone.querySelectorAll('script,foreignObject').forEach(n=>n.remove());
+    const box=document.createElement('div');
+    box.style.cssText='position:absolute;left:-99999px;top:0;width:10px;height:10px;overflow:hidden;visibility:hidden';
+    box.appendChild(clone);document.body.appendChild(box);
+    const mmU=mmW/vb[2],sizes=[];
+    clone.querySelectorAll('text,tspan').forEach(el=>{
+      if(![...el.childNodes].some(n=>n.nodeType===3&&n.nodeValue.trim()))return;
+      const fs=parseFloat(getComputedStyle(el).fontSize);
+      if(fs>0)sizes.push(fs*mmU/MMPT);
+    });
+    box.remove();
+    if(sizes.length)S.txt={n:sizes.length,min:Math.min(...sizes),max:Math.max(...sizes)};
+  }catch(e){}
+  const out=new XMLSerializer().serializeToString(root);
+  S.url=URL.createObjectURL(new Blob([out],{type:'image/svg+xml'}));
+  S.kind='svg';
+}
+async function loadRaster(file){
+  const url=URL.createObjectURL(file);
+  const img=new Image();img.src=url;
+  try{await img.decode()}catch(e){URL.revokeObjectURL(url);throw new Error('Định dạng ảnh không được hỗ trợ')}
+  S.pxW=img.naturalWidth;S.pxH=img.naturalHeight;S.url=url;S.kind='raster';
+  const buf=await file.slice(0,262144).arrayBuffer();
+  const d=readDPI(new DataView(buf));
+  S.dpi=d?d.dpi:96;S.dpiSrc=d?d.src:'giả định — file không ghi DPI';
+}
+let pdfReady=null;
+function ensurePdf(){
+  if(window.pdfjsLib)return Promise.resolve();
+  if(pdfReady)return pdfReady;
+  const base='https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/';
+  pdfReady=new Promise((res,rej)=>{
+    const s=document.createElement('script');s.src=base+'pdf.min.js';
+    s.onload=async()=>{
+      try{const t=await(await fetch(base+'pdf.worker.min.js')).text();pdfjsLib.GlobalWorkerOptions.workerSrc=URL.createObjectURL(new Blob([t],{type:'text/javascript'}))}
+      catch(e){pdfjsLib.GlobalWorkerOptions.workerSrc=base+'pdf.worker.min.js'}
+      res();
+    };
+    s.onerror=()=>{pdfReady=null;rej(new Error('Cần internet lần đầu để mở PDF (tải thư viện pdf.js)'))};
+    document.head.appendChild(s);
+  });
+  return pdfReady;
+}
+async function loadPDF(file){
+  await ensurePdf();
+  const pdf=await pdfjsLib.getDocument({data:new Uint8Array(await file.arrayBuffer())}).promise;
+  const page=await pdf.getPage(1),vp=page.getViewport({scale:1});
+  S.pages=pdf.numPages;S.mmW=vp.width*MMPT;S.mmH=vp.height*MMPT;
+  const sc=Math.min(200/72,8000/Math.max(vp.width,vp.height)),vp2=page.getViewport({scale:sc});
+  const c=document.createElement('canvas');c.width=Math.round(vp2.width);c.height=Math.round(vp2.height);
+  await page.render({canvasContext:c.getContext('2d'),viewport:vp2}).promise;
+  const blob=await new Promise(r=>c.toBlob(r,'image/png'));
+  S.url=URL.createObjectURL(blob);S.pxW=c.width;S.pxH=c.height;S.renderDpi=sc*72;S.kind='pdf';
+}
+async function loadFile(file){
+  if(!file)return;
+  const keep={url:S.url};
+  document.body.style.cursor='progress';
+  const ext=(file.name.split('.').pop()||'').toLowerCase();
+  const prev=Object.assign({},S);
+  try{
+    resetState();
+    S.name=file.name;S.ext=ext;S.bytes=file.size;
+    if(file.type==='image/svg+xml'||ext==='svg')await loadSVG(file);
+    else if(file.type==='application/pdf'||ext==='pdf')await loadPDF(file);
+    else await loadRaster(file);
+    $('img').src=S.url;
+    $('fname').textContent=file.name;
+    $('bar').classList.remove('off');
+  }catch(e){
+    Object.assign(S,prev);
+    alert('Không mở được file: '+e.message);
+  }
+  document.body.style.cursor='';
+  renderAll();
+  const st=$('stage');st.scrollLeft=(st.scrollWidth-st.clientWidth)/2;st.scrollTop=0;
+}
+
+/* ===== dựng giao diện ===== */
+function buildBar(){
+  const seg=$('seg');
+  for(let i=0;i<7;i++){
+    const b=document.createElement('button');b.className='btn a';b.textContent='A'+i;b.dataset.i=i;
+    b.onclick=()=>setMode(i);seg.appendChild(b);
+  }
+  $('fit').onclick=()=>setMode('fit');
+}
+function updateBar(){
+  [...$('seg').children].forEach((b,i)=>{
+    b.classList.toggle('on',S.mode===i);
+    b.title='A'+i+' — '+dims(A[i][S.g&&!S.g.land?0:1],A[i][S.g&&!S.g.land?1:0]);
+  });
+  $('fit').classList.toggle('on',S.mode==='fit');
+}
+function setMode(m){
+  if(!S.url)return;
+  S.mode=m;renderAll();
+  const st=$('stage');st.scrollLeft=(st.scrollWidth-st.clientWidth)/2;st.scrollTop=0;
+}
+
+function layout(){
+  const has=!!S.url;
+  $('empty').style.display=has?'none':'flex';
+  $('holder').style.display=has?'block':'none';
+  $('dot').style.display='none';
+  if(!has){S.g=null;return}
+  const g=geom(),p=ppm(),st=$('stage');
+  let k;
+  if(S.mode==='fit'){
+    st.style.overflow='hidden';
+    k=Math.max(0.01,Math.min((st.clientWidth-72)/(g.w*p),(st.clientHeight-72)/(g.h*p)));
+  }else{st.style.overflow='auto';k=kFor(S.mode,g)}
+  S.k=k;S.g=g;
+  const W=g.w*k*p,H=g.h*k*p,sh=$('sheet');
+  sh.style.width=W+'px';sh.style.height=H+'px';
+  sh.classList.toggle('meas',S.measure);
+  // lưới
+  const gr=$('grid');
+  if(S.grid){
+    const c=p*10,mj='rgba(37,99,235,.6)',mn='rgba(37,99,235,.25)';
+    const L=[],Z=[];
+    if(c>=6){L.push(`linear-gradient(to right,${mn} 1px,transparent 1px)`,`linear-gradient(to bottom,${mn} 1px,transparent 1px)`);Z.push(`${c}px ${c}px`,`${c}px ${c}px`)}
+    L.push(`linear-gradient(to right,${mj} 1px,transparent 1px)`,`linear-gradient(to bottom,${mj} 1px,transparent 1px)`);Z.push(`${c*5}px ${c*5}px`,`${c*5}px ${c*5}px`);
+    gr.style.backgroundImage=L.join(',');gr.style.backgroundSize=Z.join(',');gr.style.display='block';
+  }else gr.style.display='none';
+  // lề an toàn
+  const sf=$('safe');
+  if(S.safe){
+    const m=S.safeMM*p;
+    sf.style.display='block';sf.style.boxShadow=`inset 0 0 0 ${m}px rgba(220,38,38,.15)`;
+    const i=sf.firstElementChild;i.style.inset=m+'px';
+  }else sf.style.display='none';
+  renderRefs();drawMeasure();
+  $('dot').style.display=g.ok?'none':'block';
+}
+
+/* ===== vật tham chiếu ===== */
+const REFS={atm:{name:'Thẻ ATM',w:85.6,h:54},phone:{name:'Điện thoại',w:71,h:150},a4:{name:'Tờ A4',w:210,h:297}};
+function addRef(t){
+  if(!S.url)return;
+  const n=S.refs.length;S.refs.push(Object.assign({},REFS[t],{x:25+n*14,y:25+n*14}));
+  renderRefs();
+}
+function renderRefs(){
+  const box=$('refs');box.innerHTML='';
+  if(!S.url)return;
+  const p=ppm();
+  S.refs.forEach((r,i)=>{
+    const el=document.createElement('div');el.className='ref';
+    el.style.cssText=`left:${r.x*p}px;top:${r.y*p}px;width:${r.w*p}px;height:${r.h*p}px`;
+    el.title='Kéo để di chuyển · bấm đúp để xóa';
+    el.innerHTML=`<span>${esc(r.name)}<small>${dims(r.w,r.h)}</small></span>`;
+    el.addEventListener('mousedown',e=>{
+      if(e.button!==0)return;e.preventDefault();e.stopPropagation();
+      const sx=e.clientX,sy=e.clientY,ox=r.x,oy=r.y,pp=ppm();
+      const mv=ev=>{r.x=ox+(ev.clientX-sx)/pp;r.y=oy+(ev.clientY-sy)/pp;el.style.left=r.x*pp+'px';el.style.top=r.y*pp+'px'};
+      const up=()=>{removeEventListener('mousemove',mv);removeEventListener('mouseup',up)};
+      addEventListener('mousemove',mv);addEventListener('mouseup',up);
+    });
+    el.addEventListener('dblclick',()=>{S.refs.splice(i,1);renderRefs()});
+    box.appendChild(el);
+  });
+}
+
+/* ===== công cụ đo ===== */
+function drawMeasure(){
+  const sh=$('sheet'),mv=$('mv');
+  if(!S.url||!S.g){mv.innerHTML='';return}
+  const W=sh.clientWidth,H=sh.clientHeight,g=S.g;
+  mv.setAttribute('width',W);mv.setAttribute('height',H);
+  let h='';
+  S.lines.forEach(l=>{
+    const x1=l.a[0]*W,y1=l.a[1]*H,x2=l.b[0]*W,y2=l.b[1]*H;
+    const mo=Math.hypot((l.b[0]-l.a[0])*g.w,(l.b[1]-l.a[1])*g.h),md=mo*S.k;
+    let t=`${len(md)}`;
+    if(Math.abs(S.k-1)>0.0005)t+=` · gốc ${len(mo)}`;
+    if(md<40)t+=` · ≈ ${nf(md/MMPT,1)} pt`;
+    h+=`<line x1="${x1}" y1="${y1}" x2="${x2}" y2="${y2}" stroke="#e11d48" stroke-width="2"/>`
+      +`<circle cx="${x1}" cy="${y1}" r="3.5" fill="#e11d48"/><circle cx="${x2}" cy="${y2}" r="3.5" fill="#e11d48"/>`
+      +`<text x="${(x1+x2)/2+8}" y="${(y1+y2)/2-8}" font-size="13" font-weight="700" fill="#be123c" stroke="#fff" stroke-width="4" paint-order="stroke" font-family="system-ui,sans-serif">${esc(t)}</text>`;
+  });
+  mv.innerHTML=h;
+}
+$('sheet').addEventListener('mousedown',e=>{
+  if(!S.measure||e.button!==0||e.target.closest('.ref'))return;
+  e.preventDefault();
+  const r=$('sheet').getBoundingClientRect(),pt=ev=>[(ev.clientX-r.left)/r.width,(ev.clientY-r.top)/r.height];
+  const ln={a:pt(e),b:pt(e)};S.lines.push(ln);if(S.lines.length>6)S.lines.shift();
+  const mv=ev=>{ln.b=pt(ev);drawMeasure()};
+  const up=()=>{
+    removeEventListener('mousemove',mv);removeEventListener('mouseup',up);
+    if(Math.hypot((ln.b[0]-ln.a[0])*r.width,(ln.b[1]-ln.a[1])*r.height)<4)S.lines=S.lines.filter(x=>x!==ln);
+    drawMeasure();
+  };
+  addEventListener('mousemove',mv);addEventListener('mouseup',up);
+});
+
+/* ===== trạng thái dưới cùng ===== */
+function renderStatus(){
+  let t='Chưa có bản thiết kế',c='';
+  if(S.url&&S.g){
+    const g=S.g;
+    t=S.mode==='fit'?`Vừa màn hình · ${nf(S.k*100,1)}% kích thước thực của bản gốc`
+      :`A${S.mode} · ${dims(g.w*S.k,g.h*S.k)} · 100% thực tế (đã khóa)`;
+    c=g.ok?`<span class="chip ok">Khổ gốc A${g.ref} ✓</span>`
+      :`<button class="chip bad" id="badChip">Bản gốc lệch khổ A — xem chi tiết</button>`;
+  }
+  $('stL').textContent=t;$('stC').innerHTML=c;
+  $('stR').innerHTML=`<span id="cur"></span>`+(S.calib.done?`<span>🔒 khóa zoom</span>`:`<button class="chip warn" id="calChip">Chưa hiệu chuẩn màn hình — bấm để chỉnh</button>`);
+  const b=$('badChip');if(b)b.onclick=()=>togglePanel(true);
+  const cc=$('calChip');if(cc)cc.onclick=openCal;
+}
+
+/* ===== panel thông tin ===== */
+const row=(k,v,c='')=>`<div class="r"><span class="k">${k}</span><span class="v ${c}">${v}</span></div>`;
+const cmpTxt=k=>Math.abs(k-1)<0.0005?'Bằng bản gốc (×1)':k<1?`Nhỏ hơn ${nf(1/k,2)} lần (×${nf(k,3)})`:`Lớn hơn ${nf(k,2)} lần (×${nf(k,3)})`;
+const TIERS=[2,3,4,6,8];
+const tier=n=>TIERS.find(t=>t>=n-1e-9)||Math.ceil(n);
+const ppiCls=p=>p>=250?'c-ok':p>=150?'c-warn':'c-bad';
+const ptCls=p=>p<6?'c-bad':p<8?'c-warn':'';
+function fontGridHtml(){
+  if(!S.g)return'';
+  const g=S.g;
+  return A.map((a,i)=>{const pt=S.fontPt*kFor(i,g);return`<div class="${S.mode===i?'cur':''}">A${i}<b class="${ptCls(pt)}">${nf(pt,1)} pt</b></div>`}).join('');
+}
+function renderPanel(){
+  const P=$('pin');
+  let h=`<div class="ph"><b>Thông tin bản thiết kế</b><button class="x" id="pclose" title="Đóng (I)">✕</button></div>`;
+  if(!S.url||!S.g){
+    h+=`<p class="mut" style="margin-top:14px">Chưa có bản thiết kế. Bấm “Tải lên” để bắt đầu.</p>`;
+  }else{
+    const g=S.g,isR=S.kind==='raster',isV=S.kind==='svg',isP=S.kind==='pdf';
+    const pxLong=Math.max(S.pxW,S.pxH);
+    // --- bản gốc
+    h+=`<div class="sec"><h3>Bản gốc</h3>`;
+    h+=row('Tên file',esc(S.name));
+    h+=row('Loại',isV?'SVG · vector':isP?`PDF · ${S.pages} trang (đang xem trang 1)`:esc(S.ext.toUpperCase())+' · ảnh điểm ảnh');
+    h+=row('Dung lượng',nf(S.bytes/1048576,2)+' MB');
+    h+=row('Kích thước số',isV?`viewBox ${Math.round(S.vbW)} × ${Math.round(S.vbH)}`:`${S.pxW} × ${S.pxH} px`+(isP?` (dựng ~${Math.round(S.renderDpi)} dpi)`:''));
+    h+=row('Kích thước thực',dims(g.w,g.h)+` <span class="mut" style="font-weight:400">(${g.land?'ngang':'dọc'})</span>`);
+    if(isR)h+=row('DPI trong file',`<input class="num" type="number" id="dpiIn" min="10" max="2400" step="1" value="${Math.round(S.dpi*100)/100}"> <span class="mut" style="font-weight:400">${esc(S.dpiSrc)}</span>`);
+    if(isV)h+=row('Lấy kích thước từ',`<span style="font-weight:400">${esc(S.basis)}</span>`);
+    h+=row('Khổ nhận diện',g.ok?`A${g.ref} ✓`:'Không chuẩn khổ A',g.ok?'ok':'bad');
+    h+=row('Tỷ lệ cạnh',`${nf(g.ratio,3)} ${g.aspOK?'✓ chuẩn A':'✗ lệch '+sgn(g.asp)}`,g.aspOK?'ok':'bad');
+    if(S.refForce!=null)h+=`<div class="note warn">Đang coi bản gốc là A${S.refForce} (chỉnh tay).${g.aspOK?'':' Tỷ lệ cạnh vẫn lệch '+sgn(g.asp)+' — không kéo giãn, chỉ scale đều.'}</div>`;
+    else if(!g.ok)h+=`<div class="note bad"><b>Lệch chuẩn khổ A.</b> Gần nhất A${g.ref}: cạnh dài ${sgn(g.eL)}, cạnh ngắn ${sgn(g.eS)}. ${g.aspOK?'Tỷ lệ đúng, có thể sai DPI/đơn vị khi xuất file.':'Tỷ lệ cạnh khác chuẩn, bản in dễ thừa/thiếu lề.'}</div>`;
+    else h+=`<div class="note ok">Khớp chuẩn A${g.ref}, sai số trong ±0,5%.</div>`;
+    h+=row('Coi bản gốc là',`<select class="sel" id="refSel"><option value="">Tự nhận diện (A${g.ref})</option>${A.map((a,i)=>`<option value="${i}" ${S.refForce===i?'selected':''}>Khổ A${i}</option>`).join('')}</select>`);
+    h+=`</div>`;
+    // --- khổ đang xem
+    h+=`<div class="sec"><h3>Khổ đang xem</h3>`;
+    if(S.mode==='fit'){
+      h+=row('Chế độ','Vừa màn hình');
+      h+=row('Kích thước hiển thị',dims(g.w*S.k,g.h*S.k));
+      h+=row('So với bản gốc',`${nf(S.k*100,1)}% — chỉ để xem tổng quan`);
+      h+=`<div class="note info">Chọn A0–A6 để xem đúng kích thước in thực tế.</div>`;
+    }else{
+      const m=S.mode,k=S.k,tw=g.w*k,th=g.h*k;
+      h+=row('Khổ đích','A'+m);
+      h+=row('Kích thước hiển thị',dims(tw,th));
+      h+=row('So với bản gốc',cmpTxt(k));
+      if(!g.ok&&S.refForce==null)h+=`<div class="note warn">Bản gốc lệch chuẩn nên scale đều theo A${g.ref}, không kéo giãn.</div>`;
+      if(isR){
+        const ppi=pxLong/(g.long*k/25.4);
+        h+=row('Mật độ ảnh',`<span class="${ppiCls(ppi)}">${nf(ppi,0)} ppi</span> <span class="mut" style="font-weight:400">${ppi>=250?'đạt in xem gần':ppi>=150?'ổn khi xem xa':'dễ vỡ hạt'}</span>`);
+        [150,300].forEach(d=>{
+          const need=d/ppi,lp=Math.ceil(g.long*k/25.4*d),sp=Math.ceil(g.short*k/25.4*d);
+          h+=row('Đạt '+d+' ppi',need<=1.0001?'<span class="c-ok">✓ đủ, không cần upscale</span>':`×${nf(need,2)} → chọn <b>×${tier(need)}</b><br><span class="mut" style="font-weight:400">cần ≥ ${Math.max(lp,sp)} × ${Math.min(lp,sp)} px</span>`);
+        });
+      }else if(isV)h+=`<div class="note ok">Vector — nét ở mọi khổ, không cần upscale.</div>`;
+      else h+=`<div class="note info">PDF: nếu có ảnh nhúng, hãy kiểm tra độ phân giải của ảnh gốc.</div>`;
+    }
+    h+=`</div>`;
+    // --- bảng mọi khổ
+    h+=`<div class="sec"><h3>Quy đổi mọi khổ</h3><table class="tb"><tr><th>Khổ</th><th>Kích thước (${S.unit})</th><th>So với gốc</th>${isR?'<th>ppi</th><th>AI 300</th>':''}</tr>`;
+    A.forEach((a,i)=>{
+      const k=kFor(i,g),w=g.w*k,hh=g.h*k;
+      h+=`<tr class="${S.mode===i?'cur':''}"><td>A${i}</td><td>${len(w,false)} × ${len(hh,false)}</td><td>×${nf(k,k<1?3:2)}</td>`;
+      if(isR){const ppi=pxLong/(g.long*k/25.4),need=300/ppi;
+        h+=`<td class="${ppiCls(ppi)}">${nf(ppi,0)}</td><td class="${need<=1?'c-ok':ppi<150?'c-bad':'c-warn'}">${need<=1.0001?'✓':'×'+nf(need,2)}</td>`}
+      h+=`</tr>`;
+    });
+    h+=`</table><p class="mut" style="margin:6px 0 0">${isR?'AI 300 = hệ số upscale cần để đạt 300 ppi. ':''}Hệ số tính theo cạnh dài.</p></div>`;
+    // --- cỡ chữ
+    h+=`<div class="sec"><h3>Cỡ chữ quy đổi</h3>`;
+    h+=`<div class="r"><span class="k">Chữ ở bản gốc</span><span class="v"><input class="num" type="number" id="fontIn" min="1" max="999" step="0.5" value="${S.fontPt}"> pt</span></div>`;
+    h+=`<div class="fgrid" id="fgrid">${fontGridHtml()}</div><p class="mut" style="margin:6px 0 0">Dưới 6 pt (đỏ) khó đọc khi in; 6–8 pt (cam) chỉ đọc gần.</p>`;
+    if(isV&&S.txt){
+      const lo=S.txt.min*S.k,cl=ptCls(lo);
+      h+=row('Chữ trong SVG',`${S.txt.n} đoạn · nhỏ nhất ${nf(S.txt.min,1)} pt → <span class="${cl}">${nf(lo,1)} pt</span> ở khổ này`);
+      h+=`<p class="mut" style="margin:2px 0 0">Ước tính từ font-size, chưa tính transform.</p>`;
+    }
+    h+=`</div>`;
+  }
+  // --- hiển thị & công cụ (luôn có)
+  const p=ppm(),zr=devicePixelRatio/S.calib.dpr;
+  h+=`<div class="sec"><h3>Hiển thị & công cụ</h3>`;
+  h+=row('Đơn vị',`<select class="sel" id="uSel"><option value="cm" ${S.unit==='cm'?'selected':''}>cm</option><option value="mm" ${S.unit==='mm'?'selected':''}>mm</option><option value="in" ${S.unit==='in'?'selected':''}>inch</option></select>`);
+  h+=row('Màu nền',`<select class="sel" id="bgSel"><option value="gray" ${S.bg==='gray'?'selected':''}>Xám</option><option value="white" ${S.bg==='white'?'selected':''}>Trắng</option><option value="dark" ${S.bg==='dark'?'selected':''}>Tối</option></select>`);
+  h+=`<label class="ck"><input type="checkbox" id="ckGrid" ${S.grid?'checked':''}> Lưới 1 cm (đậm mỗi 5 cm) <kbd class="mut">G</kbd></label>`;
+  h+=`<label class="ck"><input type="checkbox" id="ckSafe" ${S.safe?'checked':''}> Lề an toàn <input type="number" id="safeMM" min="0" max="100" value="${S.safeMM}"> mm <kbd class="mut">S</kbd></label>`;
+  h+=`<label class="ck"><input type="checkbox" id="ckLoupe" ${S.loupe?'checked':''}> Kính lúp ×3 (không đổi tỷ lệ) <kbd class="mut">L</kbd></label>`;
+  h+=`<label class="ck"><input type="checkbox" id="ckMeas" ${S.measure?'checked':''}> Đo khoảng cách — kéo trên ảnh <kbd class="mut">M</kbd></label>`;
+  h+=`<div class="btns"><button class="sb" data-ref="atm">+ Thẻ ATM</button><button class="sb" data-ref="phone">+ Điện thoại</button><button class="sb" data-ref="a4">+ Tờ A4</button><button class="sb" id="clrAll">Xóa dấu đo & vật</button></div>`;
+  h+=`<p class="mut" style="margin:6px 0 0">Vật tham chiếu: kéo để di chuyển, bấm đúp để xóa.</p>`;
+  h+=row('Hiệu chuẩn',`1 cm = ${nf(p*10,1)} px · ${S.calib.done?'<span class="c-ok">đã hiệu chuẩn</span>':'<span class="c-warn">chưa (đang dùng 96 dpi)</span>'}`);
+  if(Math.abs(zr-1)>0.01)h+=`<div class="note info">Trình duyệt đang zoom ${Math.round(zr*100)}% — đã tự bù để giữ đúng kích thước thực.</div>`;
+  h+=`<div class="btns"><button class="sb" id="calOpen">Hiệu chuẩn màn hình</button>${S.url?'<button class="sb" id="copyInfo">Sao chép thông tin</button>':''}</div></div>`;
+  h+=`<div class="sec"><h3>Phím tắt</h3><div class="keys"><span><kbd>0</kbd>–<kbd>6</kbd></span><span>Khổ A0–A6</span><span><kbd>F</kbd></span><span>Vừa màn hình</span><span><kbd>I</kbd></span><span>Bật/tắt panel</span><span><kbd>M</kbd> <kbd>G</kbd> <kbd>S</kbd> <kbd>L</kbd></span><span>Đo · Lưới · Lề · Kính lúp</span><span><kbd>Esc</kbd></span><span>Xóa dấu đo / đóng menu</span></div></div>`;
+  P.innerHTML=h;
+  bindPanel();
+}
+function bindPanel(){
+  const on=(id,ev,fn)=>{const e=$(id);if(e)e.addEventListener(ev,fn)};
+  on('pclose','click',()=>togglePanel(false));
+  on('dpiIn','change',e=>{const v=parseFloat(e.target.value);if(v>=10){S.dpi=v;S.dpiSrc='nhập tay';renderAll()}});
+  on('refSel','change',e=>{S.refForce=e.target.value===''?null:+e.target.value;renderAll()});
+  on('fontIn','input',e=>{const v=parseFloat(e.target.value);if(v>0){S.fontPt=v;$('fgrid').innerHTML=fontGridHtml()}});
+  on('uSel','change',e=>{S.unit=e.target.value;LS.s('unit',S.unit);renderAll()});
+  on('bgSel','change',e=>{S.bg=e.target.value;LS.s('bg',S.bg);document.documentElement.dataset.bg=S.bg});
+  on('ckGrid','change',e=>{S.grid=e.target.checked;renderAll()});
+  on('ckSafe','change',e=>{S.safe=e.target.checked;renderAll()});
+  on('safeMM','change',e=>{const v=parseFloat(e.target.value);if(v>=0){S.safeMM=v;renderAll()}});
+  on('ckLoupe','change',e=>{S.loupe=e.target.checked;if(!S.loupe)$('loupe').style.display='none'});
+  on('ckMeas','change',e=>{S.measure=e.target.checked;renderAll()});
+  on('clrAll','click',clearAll);
+  on('calOpen','click',openCal);
+  on('copyInfo','click',copyInfo);
+  document.querySelectorAll('#pin [data-ref]').forEach(b=>b.onclick=()=>addRef(b.dataset.ref));
+}
+function togglePanel(v){
+  S.panel=v===undefined?!S.panel:v;
+  $('panel').classList.toggle('open',S.panel);
+  $('pbtn').classList.toggle('on',S.panel);
+}
+function clearAll(){S.lines=[];S.refs=[];renderRefs();drawMeasure()}
+function infoText(){
+  if(!S.url||!S.g)return'';
+  const g=S.g,L=[];
+  L.push('File: '+S.name,'Loại: '+S.kind.toUpperCase(),'Kích thước thực bản gốc: '+dims(g.w,g.h));
+  if(S.kind==='raster')L.push(`Điểm ảnh: ${S.pxW} × ${S.pxH} px · ${nf(S.dpi,0)} DPI (${S.dpiSrc})`);
+  L.push('Khổ nhận diện: '+(g.ok?'A'+g.ref+' (khớp)':`KHÔNG chuẩn — gần nhất A${g.ref} (dài ${sgn(g.eL)}, ngắn ${sgn(g.eS)})`),'Tỷ lệ cạnh: '+nf(g.ratio,3),'');
+  const pxLong=Math.max(S.pxW,S.pxH);
+  A.forEach((a,i)=>{
+    const k=kFor(i,g);let t=`A${i}: ${dims(g.w*k,g.h*k)} · ×${nf(k,3)}`;
+    if(S.kind==='raster'){const ppi=pxLong/(g.long*k/25.4);t+=` · ${nf(ppi,0)} ppi · AI300 ${300/ppi<=1?'đủ':'×'+nf(300/ppi,2)}`}
+    L.push(t);
+  });
+  return L.join('\n');
+}
+function copyInfo(){
+  const t=infoText();
+  const fb=()=>{const ta=document.createElement('textarea');ta.value=t;document.body.appendChild(ta);ta.select();try{document.execCommand('copy')}catch(e){}ta.remove()};
+  if(navigator.clipboard&&navigator.clipboard.writeText)navigator.clipboard.writeText(t).catch(fb);else fb();
+}
+
+/* ===== menu chuột phải ===== */
+function openCtx(x,y){
+  const has=!!S.url;
+  const it=[
+    ['ⓘ','Thông tin chi tiết','I',()=>togglePanel(true),S.panel,true],
+    ['📏','Đo khoảng cách (kéo trên ảnh)','M',()=>{S.measure=!S.measure;renderAll()},S.measure,has],
+    ['▦','Lưới 1 cm','G',()=>{S.grid=!S.grid;renderAll()},S.grid,has],
+    ['◻','Lề an toàn '+S.safeMM+' mm','S',()=>{S.safe=!S.safe;renderAll()},S.safe,has],
+    ['🔍','Kính lúp ×3','L',()=>{S.loupe=!S.loupe;if(!S.loupe)$('loupe').style.display='none';renderAll()},S.loupe,has],
+    null,
+    ['💳','Thêm thẻ ATM để so sánh','',()=>addRef('atm'),false,has],
+    ['📱','Thêm điện thoại để so sánh','',()=>addRef('phone'),false,has],
+    ['📄','Thêm tờ A4 để so sánh','',()=>addRef('a4'),false,has],
+    ['🧹','Xóa dấu đo & vật tham chiếu','Esc',clearAll,false,has],
+    null,
+    ['⌖','Hiệu chuẩn màn hình','',openCal,false,true],
+    ['📋','Sao chép thông tin','',copyInfo,false,has],
+    ['⬆','Tải bản thiết kế khác','',()=>$('fi').click(),false,true]
+  ];
+  const c=$('ctx');
+  c.innerHTML=it.map((m,i)=>m?`<div class="mi ${m[5]?'':'dis'}" data-i="${i}"><span>${m[0]} ${esc(m[1])}</span><em>${m[4]?'✓':m[2]}</em></div>`:'<hr>').join('');
+  c.style.display='block';
+  c.style.left=Math.min(x,innerWidth-c.offsetWidth-8)+'px';
+  c.style.top=Math.min(y,innerHeight-c.offsetHeight-8)+'px';
+  c.querySelectorAll('.mi').forEach(e=>e.onclick=()=>{const m=it[+e.dataset.i];c.style.display='none';m[3]()});
+}
+addEventListener('contextmenu',e=>{
+  if(e.target.closest('input,textarea,select'))return;
+  e.preventDefault();openCtx(e.clientX,e.clientY);
+});
+addEventListener('mousedown',e=>{if(!e.target.closest('#ctx'))$('ctx').style.display='none'});
+
+/* ===== hiệu chuẩn ===== */
+let cand=3.78;
+function calDraw(){
+  const ref=parseFloat($('calRef').value);
+  $('calBar').style.width=ref*cand+'px';
+  $('calBar').textContent=ref===100?'10 cm':'85,6 mm';
+  $('calRange').value=cand;$('calPx').textContent=nf(cand*10,1);
+}
+function openCal(){cand=ppm();$('cal').style.display='flex';calDraw()}
+$('calRef').onchange=calDraw;
+$('calRange').oninput=e=>{cand=parseFloat(e.target.value);calDraw()};
+$('calM').onclick=()=>{cand=Math.max(2,cand-0.01);calDraw()};
+$('calP').onclick=()=>{cand=Math.min(7,cand+0.01);calDraw()};
+$('calReset').onclick=()=>{cand=96/25.4;calDraw()};
+$('calCancel').onclick=()=>{$('cal').style.display='none'};
+$('calInchGo').onclick=()=>{
+  const inch=parseFloat($('calInch').value);if(!(inch>3))return;
+  const wd=screen.width*devicePixelRatio,ht=screen.height*devicePixelRatio;
+  const ppi=Math.hypot(wd,ht)/inch;
+  cand=Math.min(7,Math.max(2,ppi/25.4/devicePixelRatio));calDraw();
+};
+$('calSave').onclick=()=>{
+  S.calib={pxPerMM:cand,dpr:devicePixelRatio,done:true};LS.s('calib',S.calib);
+  $('cal').style.display='none';renderAll();
+};
+
+/* ===== khóa zoom ===== */
+addEventListener('wheel',e=>{if(e.ctrlKey||e.metaKey)e.preventDefault()},{passive:false});
+addEventListener('keydown',e=>{if((e.ctrlKey||e.metaKey)&&['+','=','-','_','0'].includes(e.key))e.preventDefault()});
+['gesturestart','gesturechange','gestureend'].forEach(t=>addEventListener(t,e=>e.preventDefault()));
+
+/* ===== phím tắt ===== */
+addEventListener('keydown',e=>{
+  if(e.target.closest&&e.target.closest('input,select,textarea'))return;
+  if(e.ctrlKey||e.metaKey||e.altKey)return;
+  const k=e.key.toLowerCase();
+  if(e.key==='Escape'){$('ctx').style.display='none';$('cal').style.display='none';clearAll();return}
+  if(k==='i')togglePanel();
+  else if(!S.url)return;
+  else if(/^[0-6]$/.test(k))setMode(+k);
+  else if(k==='f')setMode('fit');
+  else if(k==='m'){S.measure=!S.measure;renderAll()}
+  else if(k==='g'){S.grid=!S.grid;renderAll()}
+  else if(k==='s'){S.safe=!S.safe;renderAll()}
+  else if(k==='l'){S.loupe=!S.loupe;if(!S.loupe)$('loupe').style.display='none';renderAll()}
+});
+
+/* ===== con trỏ & kính lúp ===== */
+$('stage').addEventListener('mousemove',e=>{
+  const cur=$('cur'),lp=$('loupe');
+  if(!S.url){if(cur)cur.textContent='';return}
+  const r=$('sheet').getBoundingClientRect();
+  const inside=e.clientX>=r.left&&e.clientX<=r.right&&e.clientY>=r.top&&e.clientY<=r.bottom;
+  if(cur)cur.textContent=inside?`x ${len((e.clientX-r.left)/ppm(),false)} · y ${len((e.clientY-r.top)/ppm())}`:'';
+  if(S.loupe&&inside){
+    const Z=Math.min(3,16000/r.width),x=e.clientX-r.left,y=e.clientY-r.top;
+    lp.style.display='block';
+    lp.style.left=e.clientX+22+'px';lp.style.top=e.clientY+22+'px';
+    lp.style.backgroundImage=`url("${S.url}")`;
+    lp.style.backgroundSize=`${r.width*Z}px ${r.height*Z}px`;
+    lp.style.backgroundPosition=`${-(x*Z-88)}px ${-(y*Z-88)}px`;
+  }else lp.style.display='none';
+});
+$('stage').addEventListener('mouseleave',()=>{$('loupe').style.display='none'});
+
+/* ===== khởi động ===== */
+function renderAll(){layout();updateBar();renderStatus();renderPanel()}
+buildBar();
+['up1','up2'].forEach(id=>$(id).onclick=()=>$('fi').click());
+$('fi').onchange=e=>{const f=e.target.files[0];e.target.value='';loadFile(f)};
+$('pbtn').onclick=()=>togglePanel();
+let raf=0;
+const onResize=()=>{cancelAnimationFrame(raf);raf=requestAnimationFrame(renderAll)};
+addEventListener('resize',onResize);
+new ResizeObserver(()=>{if(S.mode==='fit'&&S.url)onResize()}).observe($('stage'));
+renderAll();
+</script>
+</body>
+</html>
