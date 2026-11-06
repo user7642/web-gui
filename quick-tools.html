@@ -1,0 +1,348 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Bộ công cụ nhanh</title>
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='14' fill='%230f766e'/%3E%3Crect x='12' y='12' width='40' height='14' rx='4' fill='%23ccfbf1'/%3E%3Crect x='12' y='32' width='10' height='9' rx='3' fill='%23ffffff'/%3E%3Crect x='27' y='32' width='10' height='9' rx='3' fill='%23ffffff'/%3E%3Crect x='42' y='32' width='10' height='9' rx='3' fill='%23fbbf24'/%3E%3Crect x='12' y='45' width='10' height='7' rx='3' fill='%23ffffff'/%3E%3Crect x='27' y='45' width='10' height='7' rx='3' fill='%23ffffff'/%3E%3Crect x='42' y='45' width='10' height='7' rx='3' fill='%23fbbf24'/%3E%3C/svg%3E">
+<style>
+:root{
+  --bg:#f3f5f4; --card:#ffffff; --line:#dfe5e3; --text:#1b2624; --muted:#667572;
+  --accent:#0f766e; --accent-soft:#e1f3f0; --accent-text:#ffffff;
+  --field:#f8faf9; --danger:#b42318; --radius:12px;
+}
+@media (prefers-color-scheme:dark){
+  :root{
+    --bg:#141a19; --card:#1d2524; --line:#2d3836; --text:#e6eeec; --muted:#8fa09c;
+    --accent:#2dd4bf; --accent-soft:#18322f; --accent-text:#0b1f1c;
+    --field:#161d1c; --danger:#f97066;
+  }
+}
+*{box-sizing:border-box}
+html,body{margin:0}
+body{
+  background:var(--bg); color:var(--text);
+  font:14px/1.45 "Segoe UI",system-ui,-apple-system,Roboto,sans-serif;
+  padding:10px; min-width:240px;
+}
+.stack{display:flex;flex-direction:column;gap:8px}
+
+/* Mục gập */
+details{
+  background:var(--card); border:1px solid var(--line); border-radius:var(--radius);
+  overflow:hidden;
+}
+summary{
+  list-style:none; cursor:pointer; user-select:none;
+  display:flex; align-items:center; gap:8px;
+  padding:11px 12px; font-weight:600; font-size:14px;
+}
+summary::-webkit-details-marker{display:none}
+summary:hover{background:var(--accent-soft)}
+summary:focus-visible{outline:2px solid var(--accent);outline-offset:-2px}
+.chev{
+  width:16px;height:16px;flex:none;color:var(--muted);
+  transition:transform .18s ease;
+}
+details[open] .chev{transform:rotate(90deg)}
+.body{padding:2px 12px 12px; display:flex; flex-direction:column; gap:8px}
+
+/* Ô nhập */
+input[type=text],input[type=number],textarea{
+  width:100%; font:inherit; color:var(--text);
+  background:var(--field); border:1px solid var(--line); border-radius:8px;
+  padding:8px 10px; outline:none;
+  transition:border-color .12s, box-shadow .12s;
+}
+textarea{resize:vertical;min-height:72px;line-height:1.4}
+input:focus,textarea:focus{
+  border-color:var(--accent); box-shadow:0 0 0 3px color-mix(in srgb,var(--accent) 22%,transparent);
+}
+::placeholder{color:var(--muted);opacity:.85}
+input[type=number]::-webkit-inner-spin-button{opacity:.5}
+
+/* Nút */
+button{
+  font:inherit; font-weight:600; cursor:pointer; border:0; border-radius:8px;
+  padding:7px 12px; background:var(--accent); color:var(--accent-text);
+  transition:filter .12s, transform .06s;
+}
+button:hover{filter:brightness(1.08)}
+button:active{transform:scale(.97)}
+button:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+button.ghost{
+  background:transparent; color:var(--accent); border:1px solid var(--line);
+  padding:5px 10px; font-size:12.5px;
+}
+button.ghost:hover{background:var(--accent-soft)}
+.row{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+.row.between{justify-content:space-between}
+.hint{font-size:12px;color:var(--muted)}
+
+/* Kết quả */
+.out{
+  background:var(--accent-soft); border-radius:8px; padding:8px 10px;
+  white-space:pre-wrap; word-break:break-word; min-height:38px;
+  max-height:220px; overflow:auto;
+}
+.out.empty{color:var(--muted)}
+.out.err{color:var(--danger)}
+.out.big{font-size:18px;font-weight:600;cursor:copy}
+
+/* Lịch sử máy tính */
+.hist{display:flex;flex-direction:column;gap:2px;font-size:12.5px;color:var(--muted)}
+.hist button{
+  background:none;color:inherit;font-weight:400;text-align:left;
+  padding:3px 6px;border-radius:6px;display:flex;justify-content:space-between;gap:8px;
+}
+.hist button:hover{background:var(--accent-soft);filter:none}
+.hist b{color:var(--text);font-weight:600}
+
+/* Quy đổi khổ giấy */
+.sizes{display:flex;flex-direction:column;gap:6px}
+.size{
+  display:grid; grid-template-columns:32px minmax(0,1fr) auto; gap:6px; align-items:center;
+}
+.size label{font-weight:700}
+.size .unit{
+  position:absolute; right:10px; top:50%; transform:translateY(-50%);
+  color:var(--muted); font-size:12px; pointer-events:none;
+}
+.size .wrap{position:relative}
+.size input{padding-right:30px}
+.size button{padding:7px 9px;font-size:12.5px}
+@media (max-width:300px){
+  .size{grid-template-columns:28px minmax(0,1fr)}
+  .size button{grid-column:2}
+}
+
+/* Đếm */
+.chip{
+  font-size:12px;background:var(--accent-soft);color:var(--accent);
+  padding:2px 8px;border-radius:99px;font-weight:600;
+}
+.toast{
+  position:fixed;left:50%;bottom:14px;transform:translate(-50%,20px);
+  background:var(--text);color:var(--bg);padding:6px 12px;border-radius:99px;
+  font-size:12.5px;opacity:0;pointer-events:none;transition:.2s;
+}
+.toast.show{opacity:1;transform:translate(-50%,0)}
+@media (prefers-reduced-motion:reduce){*{transition:none!important}}
+</style>
+</head>
+<body>
+<div class="stack">
+
+  <!-- 1. Máy tính -->
+  <details data-key="calc" open>
+    <summary><svg class="chev" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 3l5 5-5 5"/></svg>Máy tính</summary>
+    <div class="body">
+      <input type="text" id="calcIn" placeholder="Nhập biểu thức, ví dụ: 1+2 rồi nhấn Enter" autocomplete="off" inputmode="text">
+      <div class="out big empty" id="calcOut" title="Nhấn để sao chép">Kết quả</div>
+      <div class="hist" id="calcHist"></div>
+      <div class="hint">Hỗ trợ + − × ÷ ^ % và dấu ngoặc.</div>
+    </div>
+  </details>
+
+  <!-- 2. IN HOA -->
+  <details data-key="upper">
+    <summary><svg class="chev" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 3l5 5-5 5"/></svg>Chuyển sang IN HOA</summary>
+    <div class="body">
+      <textarea id="upIn" placeholder="Gõ chữ thường hoặc dán nhiều dòng rồi nhấn Enter (Shift+Enter để xuống dòng)"></textarea>
+      <div class="out empty" id="upOut">Kết quả sẽ hiện ở đây</div>
+      <div class="row"><button class="ghost" data-copy="upOut">Sao chép</button><button class="ghost" data-clear="upIn,upOut">Xóa</button></div>
+    </div>
+  </details>
+
+  <!-- 3. chữ thường -->
+  <details data-key="lower">
+    <summary><svg class="chev" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 3l5 5-5 5"/></svg>Chuyển sang chữ thường</summary>
+    <div class="body">
+      <textarea id="loIn" placeholder="Gõ chữ HOA hoặc dán nhiều dòng rồi nhấn Enter (Shift+Enter để xuống dòng)"></textarea>
+      <div class="out empty" id="loOut">Kết quả sẽ hiện ở đây</div>
+      <div class="row"><button class="ghost" data-copy="loOut">Sao chép</button><button class="ghost" data-clear="loIn,loOut">Xóa</button></div>
+    </div>
+  </details>
+
+  <!-- 4. Quy đổi font size -->
+  <details data-key="paper">
+    <summary><svg class="chev" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 3l5 5-5 5"/></svg>Quy đổi cỡ chữ theo khổ giấy</summary>
+    <div class="body">
+      <div class="hint">Nhập cỡ chữ ở một khổ bất kỳ, nhấn Tính toán hoặc Enter để quy đổi các khổ còn lại.</div>
+      <div class="sizes" id="sizes"></div>
+      <div class="hint">Mỗi khổ nhỏ hơn một bậc thì cỡ chữ chia √2 (≈ 1,4142).</div>
+    </div>
+  </details>
+
+  <!-- 5. Xóa dòng trống -->
+  <details data-key="blank">
+    <summary><svg class="chev" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 3l5 5-5 5"/></svg>Xóa dòng trống</summary>
+    <div class="body">
+      <textarea id="blIn" placeholder="Dán văn bản vào đây, kết quả tự cập nhật bên dưới"></textarea>
+      <label class="row hint" style="gap:6px"><input type="checkbox" id="blTrim" checked> Cắt khoảng trắng đầu và cuối mỗi dòng</label>
+      <div class="row between"><span class="hint">Kết quả</span><span class="chip" id="blStat">0 dòng</span></div>
+      <textarea id="blOut" readonly placeholder="Văn bản đã xóa dòng trống"></textarea>
+      <div class="row"><button class="ghost" data-copy="blOut">Sao chép</button><button class="ghost" data-clear="blIn,blOut">Xóa</button></div>
+    </div>
+  </details>
+
+</div>
+<div class="toast" id="toast"></div>
+
+<script>
+(function(){
+  const $ = id => document.getElementById(id);
+  const toast = $('toast'); let tt;
+  function say(msg){ toast.textContent = msg; toast.classList.add('show'); clearTimeout(tt); tt=setTimeout(()=>toast.classList.remove('show'),1400); }
+  function copy(text){
+    if(!text) return;
+    (navigator.clipboard ? navigator.clipboard.writeText(text) : Promise.reject())
+      .catch(()=>{ const t=document.createElement('textarea'); t.value=text; document.body.appendChild(t); t.select(); try{document.execCommand('copy')}catch(e){} t.remove(); })
+      .then(()=>say('Đã sao chép'), ()=>say('Đã sao chép'));
+  }
+  const val = el => ('value' in el && el.tagName!=='DIV') ? el.value : el.textContent;
+
+  /* Ghi nhớ trạng thái gập/mở */
+  const KEY='panel-last-open';
+  const sections=[...document.querySelectorAll('details[data-key]')];
+  let saved=null;
+  try{ saved=localStorage.getItem(KEY); }catch(e){}
+  // Chưa có dữ liệu lưu: mở mục đầu tiên. Đã lưu "none": đóng tất cả.
+  const first = saved===null ? sections[0].dataset.key : saved;
+  sections.forEach(d=>{ d.open = d.dataset.key===first; });
+  sections.forEach(d=>{
+    d.addEventListener('toggle',()=>{
+      if(d.open){
+        sections.forEach(o=>{ if(o!==d) o.open=false; });
+        try{ localStorage.setItem(KEY,d.dataset.key); }catch(e){}
+      }else if(!sections.some(o=>o.open)){
+        try{ localStorage.setItem(KEY,'none'); }catch(e){}
+      }
+    });
+  });
+
+  /* Nút sao chép / xóa dùng chung */
+  document.addEventListener('click',e=>{
+    const c=e.target.closest('[data-copy]'); if(c){ const el=$(c.dataset.copy); if(!el.classList.contains('empty')) copy(val(el)); return; }
+    const x=e.target.closest('[data-clear]'); if(x){
+      x.dataset.clear.split(',').forEach(id=>{
+        const el=$(id);
+        if(el.tagName==='DIV'){ el.textContent='Kết quả sẽ hiện ở đây'; el.classList.add('empty'); }
+        else el.value='';
+      });
+      if(x.dataset.clear.includes('blIn')) blank();
+      $(x.dataset.clear.split(',')[0]).focus();
+    }
+  });
+
+  /* ---------- 1. Máy tính (bộ phân tích an toàn, không dùng eval) ---------- */
+  function calc(src){
+    const s = src.replace(/×|x(?=\s*[\d(.,])/gi,'*').replace(/÷|:/g,'/').replace(/−|–/g,'-').replace(/\s+/g,'');
+    let i=0;
+    const peek=()=>s[i];
+    function num(){
+      const m = /^(\d+([.,]\d*)?|[.,]\d+)/.exec(s.slice(i));
+      if(!m) throw new Error('Biểu thức chưa hợp lệ');
+      i+=m[0].length; return parseFloat(m[0].replace(',','.'));
+    }
+    function atom(){
+      if(peek()==='('){ i++; const v=add(); if(peek()!==')') throw new Error('Thiếu dấu )'); i++; return post(v); }
+      if(peek()==='-'){ i++; return -atom(); }
+      if(peek()==='+'){ i++; return atom(); }
+      return post(num());
+    }
+    function post(v){ while(peek()==='%'){ i++; v/=100; } return v; }
+    function pow(){ const b=atom(); if(peek()==='^'){ i++; return Math.pow(b,pow()); } return b; }
+    function mul(){
+      let v=pow();
+      while(peek()==='*'||peek()==='/'){
+        const o=s[i++]; const r=pow();
+        if(o==='/' && r===0) throw new Error('Không chia được cho 0');
+        v = o==='*' ? v*r : v/r;
+      }
+      return v;
+    }
+    function add(){
+      let v=mul();
+      while(peek()==='+'||peek()==='-'){ const o=s[i++]; const r=mul(); v = o==='+'?v+r:v-r; }
+      return v;
+    }
+    if(!s) throw new Error('Hãy nhập biểu thức');
+    const v=add(); if(i<s.length) throw new Error('Ký tự không hợp lệ: '+s[i]);
+    if(!isFinite(v)) throw new Error('Kết quả quá lớn');
+    return v;
+  }
+  const fmt = n => String(parseFloat(n.toPrecision(12)));
+  const hist=[];
+  function drawHist(){
+    const box=$('calcHist'); box.textContent='';
+    hist.forEach(h=>{
+      const b=document.createElement('button');
+      const a=document.createElement('span'); a.textContent=h.q;
+      const r=document.createElement('b'); r.textContent='= '+h.r;
+      b.append(a,r); b.title='Dùng lại kết quả';
+      b.onclick=()=>{ $('calcIn').value=h.r; $('calcIn').focus(); };
+      box.appendChild(b);
+    });
+  }
+  $('calcIn').addEventListener('keydown',e=>{
+    if(e.key!=='Enter') return;
+    const out=$('calcOut'), q=e.target.value.trim();
+    try{
+      const r=fmt(calc(q));
+      out.textContent=r; out.className='out big';
+      hist.unshift({q,r}); hist.length=Math.min(hist.length,5); drawHist();
+      e.target.select();
+    }catch(err){ out.textContent=err.message; out.className='out big err'; }
+  });
+  $('calcOut').addEventListener('click',e=>{ if(!e.currentTarget.classList.contains('empty') && !e.currentTarget.classList.contains('err')) copy(e.currentTarget.textContent); });
+
+  /* ---------- 2 & 3. IN HOA / chữ thường ---------- */
+  function caseTool(inId,outId,fn){
+    const inp=$(inId), out=$(outId);
+    function run(){
+      const t=inp.value;
+      if(!t.trim()){ out.textContent='Kết quả sẽ hiện ở đây'; out.classList.add('empty'); return; }
+      out.textContent=fn(t); out.classList.remove('empty');
+    }
+    inp.addEventListener('keydown',e=>{ if(e.key==='Enter' && !e.shiftKey){ e.preventDefault(); run(); copy(out.textContent); } });
+    inp.addEventListener('paste',()=>setTimeout(run,0));
+  }
+  caseTool('upIn','upOut',t=>t.toLocaleUpperCase('vi'));
+  caseTool('loIn','loOut',t=>t.toLocaleLowerCase('vi'));
+
+  /* ---------- 4. Quy đổi khổ giấy ---------- */
+  const R=Math.SQRT2, names=['A0','A1','A2','A3','A4'];
+  const wrap=$('sizes');
+  names.forEach(n=>{
+    const row=document.createElement('div'); row.className='size';
+    row.innerHTML='<label for="s'+n+'">'+n+'</label><div class="wrap"><input type="number" id="s'+n+'" step="any" min="0" inputmode="decimal" placeholder="0"><span class="unit">pt</span></div><button type="button">Tính toán</button>';
+    wrap.appendChild(row);
+    const inp=row.querySelector('input');
+    const go=()=>{
+      const v=parseFloat(inp.value); if(!(v>=0)) { say('Hãy nhập một số hợp lệ'); return; }
+      const idx=names.indexOf(n), a0=v*Math.pow(R,idx);
+      names.forEach((m,j)=>{ if(m!==n) $('s'+m).value=Math.round(a0/Math.pow(R,j)*100)/100; });
+    };
+    row.querySelector('button').addEventListener('click',go);
+    inp.addEventListener('keydown',e=>{ if(e.key==='Enter') go(); });
+  });
+
+  /* ---------- 5. Xóa dòng trống ---------- */
+  function blank(){
+    const t=$('blIn').value, trim=$('blTrim').checked;
+    let lines=t.split(/\r?\n/);
+    const total=lines.length;
+    if(trim) lines=lines.map(l=>l.trim());
+    lines=lines.filter(l=>l.trim()!=='');
+    $('blOut').value=lines.join('\n');
+    const removed=t? total-lines.length : 0;
+    $('blStat').textContent=lines.length+' dòng · bỏ '+removed;
+  }
+  $('blIn').addEventListener('input',blank);
+  $('blTrim').addEventListener('change',blank);
+  blank();
+})();
+</script>
+</body>
+</html>
