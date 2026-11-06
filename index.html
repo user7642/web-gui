@@ -84,7 +84,7 @@ input[type=search]{font:400 15px inherit;font-family:inherit;color:var(--ink);ba
   <header class="hero">
     <div>
       <h1>Công cụ web-gui</h1>
-      <p class="sub" id="sub">Mọi trang trong thư mục, mở bằng một lần bấm. Quét lần cuối: 03:03:50 5/11/2026.</p>
+      <p class="sub" id="sub">Mọi trang trong thư mục, mở bằng một lần bấm. Quét lần cuối: 22:21:24 6/11/2026.</p>
     </div>
     <button class="scan" id="scan" type="button" aria-label="Quét thư mục">
       <svg viewBox="0 0 48 48" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" aria-hidden="true">
@@ -98,7 +98,7 @@ input[type=search]{font:400 15px inherit;font-family:inherit;color:var(--ink);ba
   <div class="bar ok" id="bar" hidden=""></div>
 
   <div class="tools">
-    <h2>Trang đã quét<span id="count">5</span></h2>
+    <h2>Trang đã quét<span id="count">7</span></h2>
     <input type="search" id="q" placeholder="Tìm theo tên hoặc file" aria-label="Tìm trang">
   </div>
   <ul class="list" id="list"></ul>
@@ -112,13 +112,19 @@ const REPO_API = "https://api.github.com/repos/user7642/web-gui/contents/";
 /* Dữ liệu dưới đây được ghi cứng vào file mỗi lần bấm Scan rồi Lưu. Không sửa tay phần giữa hai dấu mốc. */
 /*DATA_START*/
 let DATA = {
- "scanned": "2026-11-04T20:03:50.872Z",
+ "scanned": "2026-11-06T15:21:24.834Z",
  "pages": [
   {
    "file": "banner-tool.html",
    "title": "Banner Studio – ảnh bìa sản phẩm",
    "hue": 111,
    "emoji": "🖼️"
+  },
+  {
+   "file": "font-preview.html",
+   "title": "Xem trước font trong máy",
+   "hue": 64,
+   "emoji": "Aa"
   },
   {
    "file": "gedit.html",
@@ -140,6 +146,13 @@ let DATA = {
    "hue": 224,
    "emoji": "📝",
    "img": "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='12' fill='%232b2b2b'/%3E%3Cpath d='M18 44 L40 22 L46 28 L24 50 L16 52 Z' fill='%23e8e8e8'/%3E%3Cpath d='M40 22 L46 28' stroke='%23555' stroke-width='2'/%3E%3C/svg%3E"
+  },
+  {
+   "file": "quick-tools.html",
+   "title": "Bộ công cụ nhanh",
+   "hue": 317,
+   "emoji": "🧩",
+   "img": "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='14' fill='%230f766e'/%3E%3Crect x='12' y='12' width='40' height='14' rx='4' fill='%23ccfbf1'/%3E%3Crect x='12' y='32' width='10' height='9' rx='3' fill='%23ffffff'/%3E%3Crect x='27' y='32' width='10' height='9' rx='3' fill='%23ffffff'/%3E%3Crect x='42' y='32' width='10' height='9' rx='3' fill='%23fbbf24'/%3E%3Crect x='12' y='45' width='10' height='7' rx='3' fill='%23ffffff'/%3E%3Crect x='27' y='45' width='10' height='7' rx='3' fill='%23ffffff'/%3E%3Crect x='42' y='45' width='10' height='7' rx='3' fill='%23fbbf24'/%3E%3C/svg%3E"
   },
   {
    "file": "trim-lines.html",
