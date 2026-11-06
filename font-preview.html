@@ -1,0 +1,614 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Xem trước font trong máy</title>
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='14' fill='%232563eb'/%3E%3Ctext x='32' y='46' font-family='Georgia,serif' font-size='38' font-weight='700' text-anchor='middle' fill='white'%3EAa%3C/text%3E%3C/svg%3E">
+<style>
+:root{--bg:#fff;--panel:#f3f4f6;--card:#fff;--line:#d4d7dd;--text:#15171a;--mute:#6b7280;--acc:#2563eb;--chip:#e6e8ec;--onacc:#fff;--dl:#16a34a;--miss:#b45309}
+@media (prefers-color-scheme:dark){:root{--bg:#131416;--panel:#1d1f23;--card:#131416;--line:#33363c;--text:#ececec;--mute:#9aa0a8;--acc:#8ab4ff;--chip:#2a2d33;--onacc:#0b1220;--dl:#4ade80;--miss:#fbbf24}}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--text);font:15px/1.4 system-ui,sans-serif}
+.layout{display:grid;grid-template-columns:280px 1fr;min-height:100vh}
+aside{position:sticky;top:0;height:100vh;overflow:auto;background:var(--panel);border-right:1px solid var(--line);padding:16px}
+aside h3{margin:22px 0 10px;font-size:14px;font-weight:600}
+aside h3:first-of-type{margin-top:8px}
+.chips{display:flex;flex-wrap:wrap;gap:8px}
+.chips button,.seg button{font:inherit;font-size:14px;padding:8px 12px;border-radius:8px;border:1px solid transparent;background:var(--chip);color:var(--text);cursor:pointer}
+.chips button.on,.seg button.on{background:var(--acc);color:var(--onacc)}
+.note{color:var(--mute);font-size:12.5px;margin:0 0 10px}
+.hlp{font:inherit;font-size:12px;width:18px;height:18px;line-height:16px;padding:0;margin-left:6px;border-radius:50%;border:1px solid var(--line);background:none;color:var(--mute);cursor:pointer;vertical-align:1px}
+.hlp[aria-expanded=true]{background:var(--acc);color:var(--onacc);border-color:var(--acc)}
+.tg{margin-top:6px;font-size:12px;color:var(--acc)}
+.row2{display:flex;align-items:center;gap:10px;color:var(--mute)}
+.row2 input[type=range]{flex:1}
+#reset{margin-top:24px;width:100%;font:inherit;padding:9px;border-radius:8px;border:1px solid var(--line);background:none;color:var(--text);cursor:pointer}
+header{position:sticky;top:0;z-index:5;background:var(--panel);border-bottom:1px solid var(--line);padding:12px 16px;display:flex;flex-wrap:wrap;gap:10px;align-items:center}
+#txt{flex:1 1 300px;font:inherit;font-size:18px;padding:10px 14px;border-radius:10px;border:1px solid var(--line);background:var(--bg);color:var(--text)}
+#q,#sort{font:inherit;padding:10px 12px;border-radius:10px;border:1px solid var(--line);background:var(--bg);color:var(--text)}
+#q{flex:0 1 180px}
+.seg{display:flex;gap:4px}
+#load{font:inherit;padding:10px 16px;border-radius:10px;border:0;background:var(--acc);color:var(--onacc);cursor:pointer}
+:focus-visible{outline:2px solid var(--acc);outline-offset:2px}
+#status{padding:12px 16px;color:var(--mute)}
+#grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(320px,1fr));gap:14px;padding:0 16px 40px}
+#grid.row{grid-template-columns:1fr}
+.card{border:1px solid var(--line);background:var(--card);border-radius:12px;padding:14px 16px;cursor:pointer;overflow:hidden;content-visibility:auto;contain-intrinsic-size:auto 150px}
+.card:hover{border-color:var(--acc)}
+.meta{display:flex;justify-content:space-between;align-items:center;gap:8px;color:var(--mute);font-size:13px}
+.meta b{color:var(--text);font-weight:500}
+.meta i{font-style:normal}
+.meta>span:last-child{display:flex;align-items:center;gap:4px}
+.mark{font-size:15px;color:var(--mute)}
+.star{border:0;background:none;font-size:19px;line-height:1;padding:2px 6px;border-radius:6px;cursor:pointer;color:var(--mute);opacity:.4;transition:opacity .15s,color .15s}
+.card:hover .star,.star:focus-visible{opacity:1}
+.star:hover{color:#e3a008}
+.star.on{color:#e3a008;opacity:1}
+.star.dl{opacity:1;-webkit-text-stroke:1px var(--dl)}
+.star.dl:not(.on){color:var(--dl)}
+.card.dim{opacity:.45}
+.cnt{margin-left:4px;padding:1px 7px;border-radius:10px;background:rgba(127,127,127,.25);font-size:12px}
+#ctx{position:fixed;z-index:50;min-width:230px;max-width:300px;padding:6px;background:var(--panel);border:1px solid var(--line);border-radius:12px;box-shadow:0 10px 30px rgba(0,0,0,.28)}
+#ctx[hidden]{display:none}
+#ctx .ctx-t{padding:6px 10px 8px;color:var(--mute);font-size:12.5px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;border-bottom:1px solid var(--line);margin-bottom:4px}
+#ctx button{display:flex;align-items:center;gap:10px;width:100%;font:inherit;text-align:left;padding:8px 10px;border:0;border-radius:8px;background:none;color:var(--text);cursor:pointer}
+#ctx button:hover,#ctx button:focus-visible{background:var(--chip);outline:0}
+#ctx button span{width:20px;text-align:center;color:var(--mute)}
+#ctx button[data-a=fav] span{color:#e3a008}
+#ctx hr{border:0;border-top:1px solid var(--line);margin:4px 0}
+.kinds{font:inherit;font-size:12px;padding:2px 8px;border-radius:10px;border:1px solid var(--line);background:none;color:var(--mute);cursor:pointer;white-space:nowrap}
+.card:hover .kinds,.kinds:focus-visible{border-color:var(--acc);color:var(--acc)}
+#drawer,#dldrawer{position:fixed;top:0;right:0;bottom:0;width:min(460px,100vw);z-index:40;display:flex;flex-direction:column;background:var(--panel);border-left:1px solid var(--line);box-shadow:-10px 0 30px rgba(0,0,0,.25)}
+#drawer[hidden],#dldrawer[hidden]{display:none}
+.dh{display:flex;align-items:center;gap:8px;padding:12px;border-bottom:1px solid var(--line)}
+.dh button{font:inherit;font-size:18px;line-height:1;width:34px;height:34px;border-radius:8px;border:1px solid var(--line);background:none;color:var(--text);cursor:pointer}
+.dh button:disabled{opacity:.35;cursor:default}
+.dt{flex:1;min-width:0}
+.dt b{display:block;font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.dt span{color:var(--mute);font-size:12.5px}
+#dbody,#dlbody{overflow:auto;padding:12px;display:flex;flex-direction:column;gap:10px}
+.dr{border:1px solid var(--line);background:var(--card);border-radius:12px;padding:12px 14px}
+.dm{color:var(--mute);font-size:12.5px;margin-top:2px}
+.dm:empty{display:none}
+.dr .sample{margin-top:8px}
+.dr .meta b{min-width:0;overflow-wrap:anywhere}
+.dlbtns{display:flex;flex-wrap:wrap;gap:6px}
+details.dlset{border:1px solid var(--line);border-radius:12px;padding:10px 12px;background:var(--card)}
+.dlset summary{cursor:pointer;font-size:13.5px}
+#dlstat{color:var(--mute)}
+.dlsteps{margin:8px 0 0;padding-left:20px;color:var(--mute);font-size:12.5px;line-height:1.5}
+.dlset input{display:block;width:100%;font:inherit;padding:8px 10px;margin-top:8px;border-radius:8px;border:1px solid var(--line);background:var(--bg);color:var(--text)}
+.dlset .dlbtns{margin-top:8px}
+#dlopen{margin-top:8px;width:100%;font:inherit;padding:9px 12px;border-radius:8px;border:1px solid var(--line);background:none;color:var(--text);cursor:pointer;display:flex;justify-content:space-between;align-items:center}
+#dlopen:hover{border-color:var(--dl)}
+.cp{font:inherit;font-size:12px;padding:4px 8px;border-radius:7px;border:1px solid var(--line);background:none;color:var(--text);cursor:pointer;white-space:nowrap}
+.cp:hover{border-color:var(--acc);color:var(--acc)}
+.cp.miss{color:var(--miss);border-color:var(--miss)}
+.cp.on{background:var(--acc);color:var(--onacc);border-color:var(--acc)}
+.cp:disabled{opacity:.4;cursor:default}
+.dlbar{display:flex;justify-content:space-between;align-items:center;gap:6px;flex-wrap:wrap}
+.sample{margin-top:12px;font-size:var(--fs,40px);line-height:1.25;overflow-wrap:anywhere;white-space:pre-wrap}
+#grid.row .sample{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+@media (max-width:820px){.layout{grid-template-columns:1fr}aside{position:static;height:auto;border-right:0;border-bottom:1px solid var(--line)}}
+</style>
+</head>
+<body>
+<div class="layout">
+<aside>
+  <h3>Cỡ chữ xem trước</h3>
+  <div class="row2"><input id="size" type="range" min="12" max="160" value="40" aria-label="Cỡ chữ"><span id="sv">40px</span></div>
+
+  <h3>Ngôn ngữ <button class="hlp" type="button" aria-expanded="false" aria-label="Giải thích">?</button></h3>
+  <p class="note" hidden>Tiếng Việt: font có đủ 134 chữ có dấu (ă â đ ê ô ơ ư và các dấu thanh).</p>
+  <div class="chips" data-g="lang" data-single>
+    <button data-v="vi" class="on">Tiếng Việt</button><button data-v="all">Tất cả</button>
+  </div>
+
+  <h3>Phân loại <button class="hlp" type="button" aria-expanded="false" aria-label="Giải thích">?</button></h3>
+  <p class="note" hidden>Máy tự ước đoán bằng hình dạng chữ I và độ rộng, nên font trang trí có thể bị xếp sai. Với font trang trí, thư pháp… hãy dùng “Thẻ của bạn”.</p>
+  <div class="chips" data-g="cat">
+    <button data-v="serif">Có chân</button><button data-v="sans">Không chân</button><button data-v="mono">Đơn cách</button>
+  </div>
+
+  <h3>Thẻ của bạn <button class="hlp" type="button" aria-expanded="false" aria-label="Giải thích">?</button></h3>
+  <p class="note" hidden>Bấm chuột phải vào font để gắn thẻ. Chọn nhiều thẻ = hiện font có ít nhất một trong các thẻ đó.</p>
+  <div class="chips" data-g="tag">
+    <button data-v="Thư pháp">Thư pháp</button><button data-v="Trang trí">Trang trí</button><button data-v="Stencil">Stencil</button>
+    <button data-v="Chữ đậm dày">Chữ đậm dày</button><button data-v="Viết tay">Viết tay</button>
+  </div>
+
+  <h3>Độ dày nét <button class="hlp" type="button" aria-expanded="false" aria-label="Giải thích">?</button></h3>
+  <p class="note" hidden>Máy đo độ dày thân chữ I của từng kiểu chữ (Thin, Regular, Bold…) so với chiều cao chữ, không dựa vào tên kiểu: Mảnh &lt; 9%, Vừa 9–17%, Dày 17–26%, Rất dày ≥ 26%. Khi đang lọc, chỉ các kiểu khớp mới được hiện. Với font thư pháp, trang trí chỉ mang tính tham khảo. Chọn nhiều mức = hiện kiểu thuộc một trong các mức đó.</p>
+  <div class="chips" data-g="thick">
+    <button data-v="thin">Mảnh</button><button data-v="med">Vừa</button><button data-v="thick">Dày</button><button data-v="xthick">Rất dày</button>
+  </div>
+
+  <h3>Độ rộng chữ <button class="hlp" type="button" aria-expanded="false" aria-label="Giải thích">?</button></h3>
+  <p class="note" hidden>Máy đo tỉ lệ rộng/cao của chữ H ở từng kiểu chữ: Hẹp &lt; 0.70, Vừa 0.70–0.95, Rộng &gt; 0.95. Hữu ích khi diện tích decal bị giới hạn.</p>
+  <div class="chips" data-g="wid">
+    <button data-v="narrow">Hẹp</button><button data-v="mid">Vừa</button><button data-v="wide">Rộng</button>
+  </div>
+
+  <h3>Ký tự có sẵn <button class="hlp" type="button" aria-expanded="false" aria-label="Giải thích">?</button></h3>
+  <p class="note" hidden>Kiểm tra font có sẵn các ký tự này không (nếu thiếu, trình duyệt tự lấy font khác để thay). “Số &amp; ký hiệu” gồm 0–9 @ &amp; % #. Chọn nhiều ô = phải có đủ tất cả.</p>
+  <div class="chips" data-g="chr">
+    <button data-v="dong">₫ Đồng</button><button data-v="sym">Số &amp; ký hiệu</button>
+  </div>
+
+  <h3>Kiểu nghiêng</h3>
+  <div class="chips" data-g="sty">
+    <button data-v="Italic">Có bản nghiêng (Italic)</button>
+  </div>
+
+  <h3>Số kiểu tối thiểu: <span id="mv">1</span></h3>
+  <input id="min" type="range" min="1" max="1" value="1" style="width:100%" aria-label="Số kiểu tối thiểu">
+
+  <h3>Danh sách của bạn <button class="hlp" type="button" aria-expanded="false" aria-label="Giải thích">?</button></h3>
+  <p class="note" hidden>Bấm chuột phải vào font để thêm vào danh sách. Tắt “Ẩn không thích” để xem lại các font đã ẩn (hiện mờ). “Lưu để tải lại” ghi nhớ tên font cần tải lại khi cài máy mới: sao của font đó đổi sang màu xanh lá; mở danh sách để chép tên, mở Google Fonts hoặc đồng bộ lên Google Drive.</p>
+  <div class="chips" data-g="fav"><button data-v="1">★ Chỉ yêu thích<span class="cnt" id="cf">0</span></button></div>
+  <div class="chips" data-g="hide" style="margin-top:8px"><button data-v="1" class="on">⊘ Ẩn không thích<span class="cnt" id="cb">0</span></button></div>
+  <button id="dlopen" type="button">⬇ Lưu để tải lại<span class="cnt" id="cd">0</span></button>
+
+  <button id="reset">Đặt lại bộ lọc</button>
+</aside>
+
+<div>
+<header>
+  <input id="txt" value="Xin chào" placeholder="Nhập văn bản muốn xem…" aria-label="Văn bản xem trước">
+  <input id="q" type="search" placeholder="Tìm tên font…" aria-label="Tìm tên font">
+  <select id="sort" aria-label="Sắp xếp"><option value="name">Tên A–Z</option><option value="n">Nhiều kiểu nhất</option></select>
+  <div class="seg" id="view"><button data-v="grid" class="on">Lưới</button><button data-v="row">Hàng</button></div>
+  <div class="seg" id="faces"><button data-v="rep" class="on">Mỗi họ 1 kiểu</button><button data-v="all">Mọi kiểu</button></div>
+  <button id="load">Cấp quyền đọc font</button>
+</header>
+<div id="status">Bấm “Cấp quyền đọc font” để trình duyệt cho phép trang đọc danh sách font trong máy.</div>
+<main id="grid"></main>
+<div id="ctx" role="menu" hidden></div>
+<div id="drawer" role="dialog" aria-label="Mọi kiểu của họ font" hidden>
+  <div class="dh">
+    <button id="dprev" type="button" aria-label="Họ font trước">‹</button>
+    <button id="dnext" type="button" aria-label="Họ font sau">›</button>
+    <div class="dt"><b id="dname"></b><span id="dsub"></span></div>
+    <button id="dclose" type="button" aria-label="Đóng">✕</button>
+  </div>
+  <div id="dbody"></div>
+</div>
+<div id="dldrawer" role="dialog" aria-label="Danh sách lưu để tải lại" hidden>
+  <div class="dh">
+    <div class="dt"><b>Lưu để tải lại</b><span id="dlsub"></span></div>
+    <button id="dlclose" type="button" aria-label="Đóng">✕</button>
+  </div>
+  <div id="dlbody">
+    <div class="dlbar"><span class="dlbtns"><button class="cp" id="dlcopy" type="button">Chép danh sách</button><button class="cp" id="dldown" type="button">Tải .txt</button></span><button class="cp" id="dlmiss" type="button" hidden>Chưa cài</button></div>
+    <details class="dlset" id="dldet">
+      <summary>Google Drive · <span id="dlstat">chưa kết nối</span></summary>
+      <ol class="dlsteps">
+        <li>Mở script.google.com → Dự án mới (New project), xóa hết code mẫu.</li>
+        <li>Nhập mật khẩu ở ô dưới, bấm “Chép script”, dán vào dự án rồi lưu.</li>
+        <li>Triển khai (Deploy) → Tùy chọn triển khai mới (New deployment) → loại Ứng dụng web (Web app): Execute as = Me, Who has access = Anyone → Deploy. Cấp quyền khi được hỏi.</li>
+        <li>Chép Web app URL (đuôi /exec) dán vào ô dưới → Kết nối.</li>
+      </ol>
+      <input id="dlkey" type="text" placeholder="Mật khẩu (tự đặt)" autocomplete="off">
+      <input id="dlurl" type="url" placeholder="https://script.google.com/…/exec" autocomplete="off">
+      <div class="dlbtns">
+        <button class="cp" id="dlscript" type="button">Chép script</button><button class="cp" id="dlconn" type="button">Kết nối</button>
+        <button class="cp" id="dlsync" type="button" hidden>Đồng bộ ngay</button><button class="cp" id="dldisc" type="button" hidden>Ngắt</button>
+      </div>
+    </details>
+    <div id="dllist"></div>
+  </div>
+</div>
+</div>
+</div>
+
+<script>
+const $=id=>document.getElementById(id);
+const grid=$('grid'),status=$('status');
+const S={lang:'vi',cat:new Set(),sty:new Set(),thick:new Set(),wid:new Set(),chr:new Set(),tag:new Set(),min:1,fav:false,hide:true,all:false};
+const TAGS=['Thư pháp','Trang trí','Stencil','Chữ đậm dày','Viết tay'];
+let fams=[],favs=new Set(),bads=new Set(),lastList=[],dFam=null;
+try{favs=new Set(JSON.parse(localStorage.getItem('fontFav')||'[]'))}catch{}
+try{bads=new Set(JSON.parse(localStorage.getItem('fontBad')||'[]'))}catch{}
+let tags={};try{tags=JSON.parse(localStorage.getItem('fontTags')||'{}')}catch{}
+const saveTags=()=>{try{localStorage.setItem('fontTags',JSON.stringify(tags))}catch{}};
+let dls=new Set(),cfg={},dlVer=0,dlTimer=null,dlOnly=false;
+try{dls=new Set(JSON.parse(localStorage.getItem('fontDl')||'[]'))}catch{}
+try{cfg=JSON.parse(localStorage.getItem('fontDlCfg')||'{}')}catch{}
+const saveLists=()=>{try{localStorage.setItem('fontFav',JSON.stringify([...favs]));localStorage.setItem('fontBad',JSON.stringify([...bads]))}catch{}};
+function counts(){$('cf').textContent=favs.size;$('cb').textContent=bads.size;$('cd').textContent=dls.size}
+
+/* ---- phân tích font ---- */
+const VI='ĂăÂâĐđÊêÔôƠơƯưẠạẢảẤấẦầẨẩẪẫẬậẮắẰằẲẳẴẵẶặẸẹẺẻẼẽẾếỀềỂểỄễỆệỈỉỊịỌọỎỏỐốỒồỔổỖỗỘộỚớỜờỞởỠỡỢợỤụỦủỨứỪừỬửỮữỰựỲỳỴỵỶỷỸỹ';
+const cv=document.createElement('canvas');cv.width=cv.height=160;
+const cx=cv.getContext('2d',{willReadFrequently:true});
+const W=(font,ch)=>{cx.font=font;return cx.measureText(ch).width};
+const SYM='0123456789@&%#';
+function has(q,str){for(const ch of str){if(Math.abs(W(`32px "${q}",monospace`,ch)-W(`32px "${q}",serif`,ch))>0.01)return false}return true}
+const hasVi=q=>has(q,VI);
+function ink(font,ch){
+  cx.font=font;
+  cx.clearRect(0,0,160,160);cx.fillStyle='#000';cx.fillText(ch,20,120);
+  const d=cx.getImageData(0,0,160,160).data;let x0=160,x1=-1,y0=160,y1=-1,n=0;
+  for(let y=0;y<160;y++)for(let x=0;x<160;x++)if(d[(y*160+x)*4+3]>128){n++;if(x<x0)x0=x;if(x>x1)x1=x;if(y<y0)y0=y;if(y>y1)y1=y}
+  return {d,x0,x1,y0,y1,n};
+}
+function shape(q){
+  const fnt=`100px "${q}",sans-serif`;cx.font=fnt;
+  const mono=Math.abs(cx.measureText('i').width-cx.measureText('m').width)<0.5;
+  const I=ink(fnt,'I');
+  if(I.x1<0)return mono?'mono':'sans';
+  if(mono)return 'mono';
+  return I.n/((I.x1-I.x0+1)*(I.y1-I.y0+1))<0.9?'serif':'sans';
+}
+// đo nét thật theo từng độ đậm (weight) của họ font, không dựa vào tên kiểu
+function faceMetrics(q,w){
+  const fnt=`normal ${w} 100px "${q}",sans-serif`;let thick=null,wid=null;
+  const I=ink(fnt,'I');
+  if(I.x1>=0){
+    const h=I.y1-I.y0+1,runs=[];
+    for(let y=I.y0+Math.floor(h*.4);y<=I.y0+Math.floor(h*.6);y++){let c=0;for(let x=0;x<160;x++)if(I.d[(y*160+x)*4+3]>128)c++;runs.push(c)}
+    runs.sort((a,b)=>a-b);const r=runs[runs.length>>1]/h;
+    thick=r<.09?'thin':r<.17?'med':r<.26?'thick':'xthick';
+  }
+  const H=ink(fnt,'H');
+  if(H.x1>=0){const r=(H.x1-H.x0+1)/(H.y1-H.y0+1);wid=r<.7?'narrow':r<=.95?'mid':'wide'}
+  return [thick,wid];
+}
+const WMAP={thin:100,hairline:100,extralight:200,'extra light':200,ultralight:200,light:300,regular:400,book:400,medium:500,semibold:600,'semi bold':600,demibold:600,bold:700,extrabold:800,'extra bold':800,heavy:800,black:900};
+function faceProps(f){const s=f.style.toLowerCase();let b='',w=400;
+  for(const k in WMAP)if(s.includes(k)&&k.length>b.length){b=k;w=WMAP[k]}
+  f._w=w;f._i=/italic|oblique/.test(s)?'italic':'normal';}
+const isReg=f=>/^(regular|normal|book|roman)$/i.test(f.style);
+
+function group(list){
+  const m=new Map();
+  for(const f of list){faceProps(f);if(!m.has(f.family))m.set(f.family,[]);m.get(f.family).push(f)}
+  return [...m].map(([family,faces])=>({family,faces,
+    rep:faces.find(isReg)||faces.find(f=>f._i==='normal'&&f._w===400)||faces[0],n:faces.length,
+    hasLight:faces.some(f=>f._w<=300),hasBold:faces.some(f=>f._w>=700),hasBlack:faces.some(f=>f._w>=900),hasItalic:faces.some(f=>f._i==='italic')}));
+}
+let cache={},fcache={};
+try{['fontCache','fontCache2'].forEach(k=>localStorage.removeItem(k));cache=JSON.parse(localStorage.getItem('fontCache3')||'{}');fcache=JSON.parse(localStorage.getItem('fontFace3')||'{}')}catch{}
+async function analyse(){
+  let done=0;
+  const tick=async i=>{if(++done%40===0){status.textContent=`Đang phân tích font mới… ${Math.round(i/fams.length*100)}%`;await new Promise(r=>setTimeout(r))}};
+  for(let i=0;i<fams.length;i++){
+    const f=fams[i],q=f.family.replace(/"/g,''),c=cache[f.family];
+    if(c&&c.length===4){f.vi=c[0];f.cat=c[1];f.dong=c[2];f.sym=c[3]}
+    else{f.vi=hasVi(q);f.cat=shape(q);f.dong=has(q,'₫');f.sym=has(q,SYM);cache[f.family]=[f.vi,f.cat,f.dong,f.sym];await tick(i)}
+    for(const face of f.faces){
+      const k=f.family+'|'+face._w;let m=fcache[k];
+      if(!m){m=fcache[k]=faceMetrics(q,face._w);await tick(i)}
+      face._th=m[0];face._wd=m[1];
+    }
+  }
+  try{localStorage.setItem('fontCache3',JSON.stringify(cache));localStorage.setItem('fontFace3',JSON.stringify(fcache))}catch{}
+  $('min').max=Math.max(...fams.map(f=>f.n));
+}
+const faceOK=face=>(!S.thick.size||S.thick.has(face._th))&&(!S.wid.size||S.wid.has(face._wd));
+function shown(f){
+  const m=S.thick.size||S.wid.size;
+  if(S.all)return m?f.faces.filter(faceOK):f.faces;
+  return [m?(faceOK(f.rep)?f.rep:f.faces.find(faceOK)):f.rep];
+}
+
+/* ---- hiển thị ---- */
+function pass(f,q){
+  if(S.lang==='vi'&&!f.vi)return false;
+  if(S.cat.size&&!S.cat.has(f.cat))return false;
+  if((S.thick.size||S.wid.size)&&!f.faces.some(faceOK))return false;
+  if(S.chr.has('dong')&&!f.dong)return false;
+  if(S.chr.has('sym')&&!f.sym)return false;
+  if(S.tag.size&&!(tags[f.family]||[]).some(t=>S.tag.has(t)))return false;
+  for(const k of S.sty)if(!f['has'+k])return false;
+  if(f.n<S.min)return false;
+  if(S.fav&&!favs.has(f.family))return false;
+  if(S.hide&&bads.has(f.family))return false;
+  return !q||f.family.toLowerCase().includes(q);
+}
+function render(){
+  const q=$('q').value.trim().toLowerCase(),text=$('txt').value||'Xin chào';
+  let list=fams.filter(f=>pass(f,q));
+  list.sort($('sort').value==='n'?(a,b)=>b.n-a.n||a.family.localeCompare(b.family,'vi'):(a,b)=>a.family.localeCompare(b.family,'vi'));
+  lastList=list;
+  const frag=document.createDocumentFragment();let count=0;
+  for(const f of list)for(const face of shown(f)){
+    count++;
+    const c=document.createElement('div');c.className='card';c.tabIndex=0;c.dataset.name=f.family;
+    c.innerHTML='<div class="meta"><b></b><span><span class="mark"></span><button class="kinds" aria-label="Xem mọi kiểu"></button><button class="star" aria-label="Yêu thích"></button><i></i></span></div><div class="sample"></div>';
+    c.querySelector('b').textContent=f.family;c.querySelector('i').textContent=face.style;
+    const kb=c.querySelector('.kinds');if(f.n>1&&!S.all)kb.textContent=f.n+' kiểu ▸';else kb.remove();
+    const st=c.querySelector('.star'),fv=favs.has(f.family);
+    st.textContent=fv?'★':'☆';st.classList.toggle('on',fv);st.setAttribute('aria-pressed',fv);
+    const dv=dls.has(f.family);st.classList.toggle('dl',dv);if(dv)st.title='Đã lưu để tải lại';
+    if(bads.has(f.family)){c.querySelector('.mark').textContent='⊘';c.classList.add('dim')}
+    const tg=tags[f.family];if(tg&&tg.length){const e=document.createElement('div');e.className='tg';e.textContent=tg.join(' · ');c.querySelector('.meta').after(e)}
+    const s=c.querySelector('.sample');s.textContent=text;
+    s.style.fontFamily=`"${f.family}"`;s.style.fontWeight=face._w;s.style.fontStyle=face._i;
+    c.title='Bấm để chép tên font';frag.appendChild(c);
+  }
+  grid.replaceChildren(frag);counts();
+  status.textContent=`${list.length} / ${fams.length} họ font`+(S.all?` · ${count} kiểu`:'');
+}
+
+/* ---- sự kiện ---- */
+async function loadFonts(auto){
+  if(!('queryLocalFonts' in window)){status.textContent='Trình duyệt này chưa hỗ trợ Local Font Access API. Hãy dùng Chrome/Edge/Chromium bản mới trên máy tính.';return}
+  try{
+    status.textContent='Đang đọc danh sách font…';
+    closeDrawer();fams=group(await window.queryLocalFonts());
+    if(!auto){cache={};fcache={}}            // bấm tay = phân tích lại từ đầu
+    await analyse();$('load').textContent='Đọc lại font';render();if(!dlDrawer.hidden)renderDl();
+  }catch(e){
+    if(auto){status.textContent='Bấm “Cấp quyền đọc font” để tải danh sách.';return}
+    status.textContent=e.name==='NotAllowedError'?'Quyền đọc font bị từ chối. Tải lại trang và bấm Cho phép (hoặc bật quyền Fonts trong cài đặt trang web).':'Lỗi: '+e.message;
+  }
+}
+$('load').onclick=()=>loadFonts(false);
+// đã từng cấp quyền thì tự tải, không cần bấm
+(async()=>{try{const p=await navigator.permissions.query({name:'local-fonts'});if(p.state==='granted')loadFonts(true)}catch{}})();
+document.querySelector('aside').addEventListener('click',e=>{
+  const h=e.target.closest('.hlp');
+  if(h){const n=h.closest('h3').nextElementSibling;if(n&&n.classList.contains('note')){n.hidden=!n.hidden;h.setAttribute('aria-expanded',!n.hidden)}return}
+  const b=e.target.closest('.chips button');if(!b)return;
+  const g=b.parentElement.dataset.g,v=b.dataset.v;
+  if(g==='lang'){S.lang=v;b.parentElement.querySelectorAll('button').forEach(x=>x.classList.toggle('on',x===b))}
+  else{b.classList.toggle('on');const on=b.classList.contains('on');
+    if(g==='fav')S.fav=on;else if(g==='hide')S.hide=on;else on?S[g].add(v):S[g].delete(v)}
+  render();
+});
+$('min').oninput=e=>{S.min=+e.target.value;$('mv').textContent=S.min;render()};
+$('reset').onclick=()=>{
+  S.lang='vi';S.cat.clear();S.sty.clear();S.thick.clear();S.wid.clear();S.chr.clear();S.tag.clear();S.min=1;S.fav=false;S.hide=true;$('min').value=1;$('mv').textContent=1;
+  document.querySelectorAll('aside .chips').forEach(c=>c.querySelectorAll('button').forEach((x,i)=>x.classList.toggle('on',(c.dataset.g==='lang'&&i===0)||c.dataset.g==='hide')));
+  $('q').value='';render();
+};
+$('txt').oninput=()=>{const v=$('txt').value||'Xin chào';document.querySelectorAll('.sample').forEach(n=>n.textContent=v)};
+let t;$('q').oninput=()=>{clearTimeout(t);t=setTimeout(render,120)};
+$('sort').onchange=render;
+$('size').oninput=e=>{document.documentElement.style.setProperty('--fs',e.target.value+'px');$('sv').textContent=e.target.value+'px'};
+$('view').onclick=e=>{const b=e.target.closest('button');if(!b)return;
+  grid.classList.toggle('row',b.dataset.v==='row');$('view').querySelectorAll('button').forEach(x=>x.classList.toggle('on',x===b))};
+$('faces').onclick=e=>{const b=e.target.closest('button');if(!b)return;
+  S.all=b.dataset.v==='all';$('faces').querySelectorAll('button').forEach(x=>x.classList.toggle('on',x===b));render()};
+grid.addEventListener('click',async e=>{
+  const c=e.target.closest('.card');if(!c)return;
+  const name=c.dataset.name;
+  if(e.target.closest('.kinds')){openDrawer(name);return}
+  if(e.target.closest('.star')){
+    if(favs.has(name))favs.delete(name);else{favs.add(name);bads.delete(name)}
+    saveLists();render();return;
+  }
+  try{await navigator.clipboard.writeText(name)}catch{}
+  const i=c.querySelector('i'),old=i.textContent;i.textContent='Đã chép tên';setTimeout(()=>i.textContent=old,1200);
+});
+
+/* ---- ngăn xem mọi kiểu của một họ font ---- */
+const drawer=$('drawer'),dbody=$('dbody');
+const TH={thin:'mảnh',med:'vừa',thick:'dày',xthick:'rất dày'},WD={narrow:'hẹp',mid:'vừa',wide:'rộng'};
+function closeDrawer(){drawer.hidden=true;dFam=null}
+function openDrawer(name){
+  const f=fams.find(x=>x.family===name);if(!f)return;closeDl();
+  dFam=f;$('dname').textContent=f.family;$('dsub').textContent=f.n+' kiểu';
+  const text=$('txt').value||'Xin chào';
+  const faces=[...f.faces].sort((a,b)=>(a._i==='italic')-(b._i==='italic')||a._w-b._w||a.style.localeCompare(b.style));
+  const frag=document.createDocumentFragment();
+  for(const face of faces){
+    const r=document.createElement('div');r.className='dr';r.dataset.style=face.style;
+    r.innerHTML='<div class="meta"><b></b><span><button class="cp" data-c="fam" title="Tên họ — dán vào ô Font family của Inkscape">Họ</button><button class="cp" data-c="sty" title="Tên kiểu — dán vào ô Font style của Inkscape">Kiểu</button><button class="cp" data-c="full" title="Họ + kiểu — dán vào ô Font của Scribus">Họ + kiểu</button></span></div><div class="dm"></div><div class="sample"></div>';
+    r.querySelector('b').textContent=face.style;
+    const lab=[];if(face._th)lab.push('nét '+TH[face._th]);if(face._wd)lab.push('chữ '+WD[face._wd]);
+    r.querySelector('.dm').textContent=lab.join(' · ');
+    const sm=r.querySelector('.sample');sm.textContent=text;
+    sm.style.fontFamily=`"${f.family}"`;sm.style.fontWeight=face._w;sm.style.fontStyle=face._i;
+    frag.appendChild(r);
+  }
+  dbody.replaceChildren(frag);dbody.scrollTop=0;
+  const i=lastList.indexOf(f);
+  $('dprev').disabled=i<=0;$('dnext').disabled=i<0||i>=lastList.length-1;
+  drawer.hidden=false;
+}
+const stepDrawer=d=>{if(!dFam)return;const n=lastList[lastList.indexOf(dFam)+d];if(n)openDrawer(n.family)};
+$('dprev').onclick=()=>stepDrawer(-1);$('dnext').onclick=()=>stepDrawer(1);$('dclose').onclick=closeDrawer;
+dbody.addEventListener('click',async e=>{
+  const b=e.target.closest('.cp');if(!b||!dFam)return;
+  const st=b.closest('.dr').dataset.style,fam=dFam.family;
+  const v=b.dataset.c==='fam'?fam:b.dataset.c==='sty'?st:fam+' '+st;
+  try{await navigator.clipboard.writeText(v)}catch{}
+  const old=b.textContent;b.textContent='Đã chép';setTimeout(()=>b.textContent=old,1200);
+});
+document.addEventListener('keydown',e=>{
+  if(drawer.hidden||!ctx.hidden)return;
+  if((e.key==='ArrowLeft'||e.key==='ArrowRight')&&!/^(INPUT|SELECT|TEXTAREA)$/.test(document.activeElement.tagName))stepDrawer(e.key==='ArrowLeft'?-1:1);
+});
+document.addEventListener('mousedown',e=>{
+  if(drawer.hidden||e.button===2)return;
+  if(drawer.contains(e.target)||ctx.contains(e.target)||e.target.closest('.kinds'))return;
+  closeDrawer();
+});
+
+/* ---- danh sách “Lưu để tải lại” + đồng bộ Google Drive ---- */
+const dlDrawer=$('dldrawer');
+const dlList=()=>[...dls].sort((a,b)=>a.localeCompare(b,'vi'));
+const dlStat=t=>{$('dlstat').textContent=t};
+const hhmm=()=>new Date().toLocaleTimeString('vi-VN',{hour:'2-digit',minute:'2-digit'});
+const dlErr=e=>e.message==='Failed to fetch'?'không kết nối được (kiểm tra link, quyền “Anyone” và mạng)':e.message;
+function flash(b,t){if(b._f)return;b._f=1;const o=b.textContent;b.textContent=t;setTimeout(()=>{b.textContent=o;b._f=0},1200)}
+function saveDlLocal(){try{localStorage.setItem('fontDl',JSON.stringify([...dls]))}catch{}}
+function dlUI(){counts();if(!dlDrawer.hidden)renderDl();if(fams.length)render()}
+function dlChanged(){
+  dlVer++;saveDlLocal();try{localStorage.setItem('fontDlDirty','1')}catch{}
+  dlUI();
+  if(cfg.url){clearTimeout(dlTimer);dlTimer=setTimeout(dlSync,1500)}
+}
+function dlCfgUI(){$('dlsync').hidden=$('dldisc').hidden=!cfg.url}
+function renderDl(){
+  const all=dlList(),known=fams.length>0;
+  const inst=new Set(fams.map(f=>f.family.toLowerCase()));
+  const miss=n=>known&&!inst.has(n.toLowerCase());
+  const nMiss=all.filter(miss).length;
+  const L=dlOnly&&known?all.filter(miss):all;
+  $('dlsub').textContent=all.length+' font'+(known?' · '+nMiss+' chưa cài':'');
+  const mb=$('dlmiss');mb.hidden=!known;mb.textContent='Chưa cài ('+nMiss+')';
+  mb.classList.toggle('on',dlOnly&&known);mb.disabled=!nMiss&&!dlOnly;
+  const frag=document.createDocumentFragment();
+  if(!L.length){const p=document.createElement('p');p.className='note';
+    p.textContent=all.length?'Tất cả font trong danh sách đã cài trên máy này.':'Chưa có font nào. Bấm chuột phải vào một font rồi chọn “Lưu để tải lại”.';frag.appendChild(p)}
+  for(const n of L){
+    const r=document.createElement('div');r.className='dr';r.dataset.name=n;
+    r.innerHTML='<div class="meta"><b></b><span><button class="cp" data-a="copy" type="button" title="Chép tên để dán vào ô tìm kiếm">Chép</button><button class="cp" data-a="gf" type="button" title="Mở Google Fonts với tên này">Google Fonts</button><button class="cp" data-a="rm" type="button" title="Bỏ khỏi danh sách" aria-label="Bỏ khỏi danh sách">✕</button></span></div>';
+    r.querySelector('b').textContent=n;
+    if(miss(n)){const g=r.querySelector('[data-a="gf"]');g.classList.add('miss');g.title='Chưa cài trên máy này — mở Google Fonts để tải'}
+    frag.appendChild(r);
+  }
+  $('dllist').replaceChildren(frag);
+}
+function closeDl(){dlDrawer.hidden=true}
+function openDl(){closeDrawer();$('dlurl').value=cfg.url||'';$('dlkey').value=cfg.key||'';dlCfgUI();renderDl();dlDrawer.hidden=false}
+
+async function dlGet(){
+  const r=await fetch(cfg.url+(cfg.url.includes('?')?'&':'?')+'k='+encodeURIComponent(cfg.key||''));
+  const t=await r.text();
+  if(t.trim()==='SAI_MAT_KHAU')throw new Error('sai mật khẩu');
+  if(/^\s*</.test(t))throw new Error('link trả về trang web thay vì dữ liệu (kiểm tra Who has access = Anyone khi Deploy)');
+  return t.split(/\r?\n/).map(x=>x.trim()).filter(Boolean);
+}
+async function dlPut(list){
+  const r=await fetch(cfg.url,{method:'POST',headers:{'Content-Type':'text/plain;charset=utf-8'},body:JSON.stringify({k:cfg.key||'',list:list.join('\n')+'\n'})});
+  const t=(await r.text()).trim();
+  if(t==='SAI_MAT_KHAU')throw new Error('sai mật khẩu');
+  if(t!=='OK')throw new Error('phản hồi lạ từ Drive');
+}
+// có thay đổi chưa đẩy lên → đẩy (máy này thắng); không có → lấy từ Drive về
+async function dlSync(){
+  if(!cfg.url)return;
+  const v=dlVer;dlStat('đang đồng bộ…');
+  try{
+    if(localStorage.getItem('fontDlDirty')==='1')await dlPut(dlList());
+    else{
+      const r=await dlGet();
+      if(dlVer!==v)return;
+      if(r.join('\n')!==dlList().join('\n')){dls=new Set(r);saveDlLocal();dlUI()}
+    }
+    if(dlVer===v)localStorage.removeItem('fontDlDirty');
+    dlStat('đã đồng bộ '+hhmm());
+  }catch(e){dlStat('lỗi: '+dlErr(e))}
+}
+async function dlConnect(){
+  const url=$('dlurl').value.trim(),key=$('dlkey').value.trim();
+  if(!/^https:\/\/script\.google\.com\/.+\/exec(\?.*)?$/.test(url)){dlStat('link phải có dạng https://script.google.com/…/exec');return}
+  if(!key){dlStat('hãy nhập mật khẩu');return}
+  const old=cfg;cfg={url,key};dlStat('đang kết nối…');
+  try{
+    for(const n of await dlGet())dls.add(n);   // lần đầu: gộp danh sách máy này với Drive
+    saveDlLocal();await dlPut(dlList());
+    localStorage.removeItem('fontDlDirty');localStorage.setItem('fontDlCfg',JSON.stringify(cfg));
+    dlStat('đã kết nối · '+hhmm());$('dldet').open=false;dlCfgUI();dlUI();
+  }catch(e){cfg=old;dlStat('lỗi: '+dlErr(e))}
+}
+const APPS_SCRIPT=key=>`const PASS = ${JSON.stringify(key)};
+const FILE = 'font-can-cai.txt';
+function file_() {
+  const it = DriveApp.getFilesByName(FILE);
+  return it.hasNext() ? it.next() : DriveApp.createFile(FILE, '', MimeType.PLAIN_TEXT);
+}
+function doGet(e) {
+  if (e.parameter.k !== PASS) return ContentService.createTextOutput('SAI_MAT_KHAU');
+  return ContentService.createTextOutput(file_().getBlob().getDataAsString('UTF-8'));
+}
+function doPost(e) {
+  const d = JSON.parse(e.postData.contents);
+  if (d.k !== PASS) return ContentService.createTextOutput('SAI_MAT_KHAU');
+  file_().setContent(d.list);
+  return ContentService.createTextOutput('OK');
+}
+`;
+$('dlopen').onclick=()=>dlDrawer.hidden?openDl():closeDl();
+$('dlclose').onclick=closeDl;
+$('dlmiss').onclick=()=>{dlOnly=!dlOnly;renderDl()};
+$('dlcopy').onclick=async e=>{const b=e.currentTarget;try{await navigator.clipboard.writeText(dlList().join('\n'))}catch{}flash(b,'Đã chép')};
+$('dldown').onclick=()=>{
+  const a=document.createElement('a');
+  a.href=URL.createObjectURL(new Blob([dlList().join('\n')+'\n'],{type:'text/plain;charset=utf-8'}));
+  a.download='font-can-cai.txt';a.click();setTimeout(()=>URL.revokeObjectURL(a.href),1000);
+};
+$('dlscript').onclick=async e=>{
+  const b=e.currentTarget,key=$('dlkey').value.trim();
+  if(!key){dlStat('hãy nhập mật khẩu trước khi chép script');$('dlkey').focus();return}
+  try{await navigator.clipboard.writeText(APPS_SCRIPT(key))}catch{}
+  flash(b,'Đã chép');
+};
+$('dlconn').onclick=dlConnect;
+$('dlsync').onclick=dlSync;
+$('dldisc').onclick=()=>{cfg={};try{localStorage.removeItem('fontDlCfg')}catch{}dlStat('chưa kết nối');dlCfgUI()};
+$('dllist').addEventListener('click',async e=>{
+  const b=e.target.closest('.cp');if(!b)return;
+  const n=b.closest('.dr').dataset.name;
+  if(b.dataset.a==='copy'){try{await navigator.clipboard.writeText(n)}catch{}flash(b,'Đã chép')}
+  else if(b.dataset.a==='gf')window.open('https://fonts.google.com/?query='+encodeURIComponent(n),'_blank','noopener');
+  else if(b.dataset.a==='rm'){dls.delete(n);dlChanged()}
+});
+document.addEventListener('mousedown',e=>{
+  if(dlDrawer.hidden||e.button===2)return;
+  if(dlDrawer.contains(e.target)||ctx.contains(e.target)||e.target.closest('#dlopen'))return;
+  closeDl();
+});
+if(cfg.url){dlStat('đang kiểm tra…');dlSync()}
+
+/* ---- menu chuột phải ---- */
+const ctx=$('ctx');let ctxName=null,ctxX=0,ctxY=0;
+const closeCtx=()=>{ctx.hidden=true};
+function openCtx(x,y,name){
+  ctxName=name;ctxX=x;ctxY=y;const fv=favs.has(name),bd=bads.has(name);
+  ctx.innerHTML=`<div class="ctx-t"></div>
+  <button role="menuitem" data-a="fav"><span>★</span>${fv?'Bỏ yêu thích':'Yêu thích'}</button>
+  <button role="menuitem" data-a="bad"><span>⊘</span>${bd?'Bỏ không thích':'Không thích'}</button>
+  <button role="menuitem" data-a="dl"><span>⬇</span>${dls.has(name)?'Bỏ khỏi danh sách tải lại':'Lưu để tải lại'}</button>
+  <hr>
+  ${TAGS.map(t=>`<button role="menuitem" data-a="tag" data-t="${t}"><span>${(tags[name]||[]).includes(t)?'✓':''}</span>${t}</button>`).join('')}
+  <hr>
+  <button role="menuitem" data-a="kinds"><span>▤</span>Xem mọi kiểu của font này</button>
+  <button role="menuitem" data-a="name"><span>⧉</span>Chép tên font</button>
+  <button role="menuitem" data-a="css"><span>{ }</span>Chép font-family CSS</button>`;
+  ctx.firstElementChild.textContent=name;ctx.hidden=false;
+  const r=ctx.getBoundingClientRect();
+  ctx.style.left=Math.max(8,Math.min(x,innerWidth-r.width-8))+'px';
+  ctx.style.top=Math.max(8,Math.min(y,innerHeight-r.height-8))+'px';
+  ctx.querySelector('button').focus();
+}
+grid.addEventListener('contextmenu',e=>{
+  const c=e.target.closest('.card');if(!c)return;
+  e.preventDefault();
+  let x=e.clientX,y=e.clientY;
+  if(!x&&!y){const r=c.getBoundingClientRect();x=r.left+24;y=r.top+24}
+  openCtx(x,y,c.dataset.name);
+});
+grid.addEventListener('keydown',e=>{
+  if(e.key==='ContextMenu'||(e.shiftKey&&e.key==='F10')){const c=e.target.closest('.card');if(c){e.preventDefault();const r=c.getBoundingClientRect();openCtx(r.left+24,r.top+24,c.dataset.name)}}
+});
+ctx.addEventListener('click',async e=>{
+  const b=e.target.closest('button');if(!b)return;
+  const a=b.dataset.a,n=ctxName;
+  if(a==='tag'){const t=b.dataset.t,cur=new Set(tags[n]||[]);cur.has(t)?cur.delete(t):cur.add(t);
+    if(cur.size)tags[n]=TAGS.filter(x=>cur.has(x));else delete tags[n];
+    saveTags();render();openCtx(ctxX,ctxY,n);return}
+  closeCtx();
+  if(a==='fav'){if(favs.has(n))favs.delete(n);else{favs.add(n);bads.delete(n)}saveLists();render()}
+  else if(a==='bad'){if(bads.has(n))bads.delete(n);else{bads.add(n);favs.delete(n)}saveLists();render()}
+  else if(a==='dl'){if(dls.has(n))dls.delete(n);else dls.add(n);dlChanged()}
+  else if(a==='kinds')openDrawer(n);
+  else{try{await navigator.clipboard.writeText(a==='css'?`font-family: "${n}";`:n)}catch{}}
+});
+ctx.addEventListener('keydown',e=>{
+  const items=[...ctx.querySelectorAll('button')],i=items.indexOf(document.activeElement);
+  if(e.key==='ArrowDown'){e.preventDefault();items[(i+1)%items.length].focus()}
+  else if(e.key==='ArrowUp'){e.preventDefault();items[(i-1+items.length)%items.length].focus()}
+});
+document.addEventListener('mousedown',e=>{if(!ctx.hidden&&!ctx.contains(e.target))closeCtx()});
+document.addEventListener('keydown',e=>{if(e.key==='Escape'){if(!ctx.hidden)closeCtx();else{closeDrawer();closeDl()}}});
+addEventListener('scroll',closeCtx,true);addEventListener('resize',closeCtx);
+counts();
+</script>
+</body>
+</html>
