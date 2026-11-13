@@ -1,0 +1,308 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>PDF sang ảnh</title>
+<style>
+  :root{
+    --bg:#eef0f3; --panel:#ffffff; --line:#dfe3e8; --text:#1f2933; --muted:#6b7683;
+    --accent:#2563eb; --accent-dark:#1d4ed8; --ok:#16a34a; --err:#dc2626;
+    --gutter:20px; --radius:10px;
+  }
+  *{box-sizing:border-box}
+  html,body{height:100%;margin:0}
+  body{
+    font-family:"Be Vietnam Pro","Segoe UI",system-ui,-apple-system,Roboto,Arial,sans-serif;
+    color:var(--text);background:var(--bg);
+    display:flex;flex-direction:column;height:100dvh;overflow:hidden;
+  }
+  button{font:inherit;color:inherit;cursor:pointer}
+  button:disabled{opacity:.45;cursor:not-allowed}
+
+  /* ===== Các dải cố định ===== */
+  .bar{flex:0 0 auto;background:var(--panel);}
+  .bar-inner{max-width:1100px;margin:0 auto;padding:0 var(--gutter);height:100%;display:flex;align-items:center;gap:12px}
+
+  .top{height:56px;border-bottom:1px solid var(--line)}
+  .title{font-weight:700;font-size:17px;letter-spacing:.2px;white-space:nowrap}
+  .info{flex:1;min-width:0;text-align:center;color:var(--muted);font-size:13px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+
+  .tools{height:64px;border-top:1px solid var(--line)}
+  .tools .bar-inner{justify-content:space-between}
+  .group{display:flex;align-items:center;gap:10px}
+  .group-label{font-size:13px;color:var(--muted);white-space:nowrap}
+
+  .seg{display:inline-flex;background:#f1f3f6;border:1px solid var(--line);border-radius:9px;padding:3px;gap:2px}
+  .seg button{border:0;background:transparent;padding:7px 14px;border-radius:7px;font-size:14px;color:var(--muted);min-width:56px}
+  .seg button[aria-pressed="true"]{background:#fff;color:var(--text);font-weight:600;box-shadow:0 1px 2px rgba(0,0,0,.12)}
+
+  .btn{border:1px solid var(--line);background:#fff;border-radius:9px;padding:9px 16px;font-size:14px;font-weight:600;
+       transition:background .15s,border-color .15s,color .15s}
+  .btn:hover:not(:disabled){background:#f6f8fa}
+  .btn.primary{background:var(--accent);border-color:var(--accent);color:#fff}
+  .btn.primary:hover:not(:disabled){background:var(--accent-dark);border-color:var(--accent-dark)}
+  .flash-ok{background:var(--ok)!important;border-color:var(--ok)!important;color:#fff!important}
+  .flash-err{background:var(--err)!important;border-color:var(--err)!important;color:#fff!important}
+
+  /* ===== Khu xem ảnh: cố định, ảnh co giãn bên trong ===== */
+  .stage{flex:1 1 0;min-height:0;position:relative;padding:var(--gutter)}
+  .board{
+    position:absolute;inset:var(--gutter);
+    display:flex;align-items:center;justify-content:center;
+    border:1px solid var(--line);border-radius:var(--radius);overflow:hidden;
+    background:
+      conic-gradient(#e7e9ed 25%,#f4f5f7 0 50%,#e7e9ed 0 75%,#f4f5f7 0) 0 0/18px 18px;
+  }
+  .board img{
+    max-width:calc(100% - 32px);max-height:calc(100% - 32px);
+    object-fit:contain;background:#fff;
+    box-shadow:0 6px 24px rgba(15,23,42,.22);display:none;
+  }
+  .board.has img{display:block}
+  .drop{
+    position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:10px;
+    background:#f8f9fb;border:2px dashed #c4cbd4;border-radius:var(--radius);margin:14px;
+    color:var(--muted);text-align:center;padding:20px;cursor:pointer;transition:border-color .15s,background .15s;
+  }
+  .drop:hover,.board.over .drop{border-color:var(--accent);background:#f2f6ff;color:var(--accent)}
+  .drop strong{font-size:18px;color:var(--text)}
+  .drop svg{width:44px;height:44px}
+  .board.has .drop{display:none}
+  .drop .error{color:var(--err);font-size:14px;min-height:20px}
+  .loading{position:absolute;inset:0;display:none;align-items:center;justify-content:center;background:rgba(255,255,255,.6);font-size:14px;color:var(--muted)}
+  .board.busy .loading{display:flex}
+
+  /* ===== Dải chân trang: Khổ giấy ===== */
+  .foot{height:76px;border-top:1px solid var(--line);position:relative;z-index:2}
+  .foot .bar-inner{display:grid;grid-template-columns:auto 44px repeat(6,minmax(0,1fr));gap:10px;align-items:center}
+  .foot-label{font-size:13px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.6px;padding-right:6px}
+  .orient{
+    width:44px;height:44px;border:1px solid var(--line);background:#fff;border-radius:9px;
+    display:flex;align-items:center;justify-content:center;padding:0;
+  }
+  .orient:hover{background:#f6f8fa}
+  .orient svg{width:22px;height:22px;transition:transform .2s}
+  .orient[data-o="ngang"] svg{transform:rotate(90deg)}
+  .size{
+    position:relative;height:44px;border:1px solid var(--line);background:#fff;border-radius:9px;
+    font-size:15px;font-weight:700;padding:0;
+    transition:background .15s,border-color .15s,color .15s;
+  }
+  .size:hover{background:#f6f8fa;border-color:#c4cbd4}
+  .size::after{
+    content:attr(data-tip);position:absolute;bottom:calc(100% + 10px);left:50%;transform:translateX(-50%);
+    background:#1f2933;color:#fff;font-size:13px;font-weight:500;padding:6px 10px;border-radius:7px;white-space:nowrap;
+    opacity:0;pointer-events:none;transition:opacity .12s;
+  }
+  .size:hover::after,.size:active::after{opacity:1}
+  .size:first-of-type::after{left:0;transform:none}
+  .size:last-of-type::after{left:auto;right:0;transform:none}
+
+  @media (max-width:640px){
+    :root{--gutter:12px}
+    .foot-label{display:none}
+    .foot .bar-inner{grid-template-columns:44px repeat(6,minmax(0,1fr));gap:6px}
+    .group-label{display:none}
+    .seg button{padding:7px 9px;min-width:0;font-size:13px}
+    .btn{padding:9px 11px}
+    .info{display:none}
+    .top .bar-inner{justify-content:space-between}
+  }
+  input[type=file]{display:none}
+</style>
+</head>
+<body>
+
+<header class="bar top">
+  <div class="bar-inner">
+    <div class="title">PDF sang ảnh</div>
+    <div class="info" id="info"></div>
+    <button class="btn" id="pick2" type="button">Chọn PDF khác</button>
+  </div>
+</header>
+
+<main class="stage">
+  <div class="board" id="board">
+    <img id="preview" alt="Ảnh xem trước">
+    <div class="drop" id="drop">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8z"/><path d="M14 3v5h5"/><path d="M12 17v-6"/><path d="m9.5 13.5 2.5-2.5 2.5 2.5"/></svg>
+      <strong>Kéo file PDF vào đây</strong>
+      <span>hoặc bấm để chọn file từ máy</span>
+      <span class="error" id="err"></span>
+    </div>
+    <div class="loading">Đang chuyển đổi…</div>
+  </div>
+</main>
+
+<section class="bar tools">
+  <div class="bar-inner">
+    <div class="group">
+      <span class="group-label">Độ nét</span>
+      <div class="seg" id="seg">
+        <button type="button" data-q="light" aria-pressed="false">Nhẹ</button>
+        <button type="button" data-q="normal" aria-pressed="true">Vừa</button>
+        <button type="button" data-q="sharp" aria-pressed="false">Nét</button>
+        <button type="button" data-q="orig" aria-pressed="false">Gốc</button>
+      </div>
+    </div>
+    <div class="group">
+      <button class="btn primary" id="copy" type="button" disabled>Sao chép ảnh</button>
+      <button class="btn" id="download" type="button" disabled>Tải xuống</button>
+    </div>
+  </div>
+</section>
+
+<footer class="bar foot">
+  <div class="bar-inner" id="foot">
+    <span class="foot-label">Khổ giấy</span>
+    <button class="orient" id="orient" type="button" data-o="doc" aria-label="Đổi hướng ngang/dọc" title="Đổi hướng ngang/dọc">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="6" y="2" width="12" height="20" rx="2.5"/><path d="M10.5 19h3"/></svg>
+    </button>
+  </div>
+</footer>
+
+<input type="file" id="file" accept="application/pdf,.pdf">
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
+<script>
+(function(){
+  const SIZES = [
+    {k:'A0', doc:'84 x 118', ngang:'118 x 84'},
+    {k:'A1', doc:'60 x 84',  ngang:'84 x 60'},
+    {k:'A2', doc:'42 x 60',  ngang:'60 x 42'},
+    {k:'A3', doc:'30 x 42',  ngang:'42 x 30'},
+    {k:'A4', doc:'21 x 30',  ngang:'30 x 21'},
+    {k:'A5', doc:'15 x 21',  ngang:'21 x 15'}
+  ];
+  const LONG = {light:1024, normal:1536, sharp:2048, orig:null};
+  const MAX_SIDE = 8000;
+
+  const $ = id => document.getElementById(id);
+  const board=$('board'), drop=$('drop'), preview=$('preview'), info=$('info'), errEl=$('err');
+  const fileInput=$('file'), copyBtn=$('copy'), dlBtn=$('download'), orientBtn=$('orient'), foot=$('foot');
+
+  let page=null, fileName='anh', quality='normal', blob=null, token=0, orient='doc', url=null;
+
+  /* ---- PDF.js worker (tải qua blob để chạy được cả khi mở file trực tiếp) ---- */
+  const WORKER='https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
+  let workerReady=(async()=>{
+    try{
+      const t=await (await fetch(WORKER)).text();
+      pdfjsLib.GlobalWorkerOptions.workerSrc=URL.createObjectURL(new Blob([t],{type:'text/javascript'}));
+    }catch(e){ pdfjsLib.GlobalWorkerOptions.workerSrc=WORKER; }
+  })();
+
+  /* ---- Dải khổ giấy ---- */
+  const sizeBtns = SIZES.map(s=>{
+    const b=document.createElement('button');
+    b.type='button'; b.className='size'; b.textContent=s.k; b.dataset.k=s.k;
+    b.addEventListener('click',()=>copyText(labelOf(s),b));
+    foot.appendChild(b);
+    return b;
+  });
+  function labelOf(s){ return s.k+' ('+s[orient]+' cm)'; }
+  function refreshSizes(){
+    SIZES.forEach((s,i)=>{ sizeBtns[i].dataset.tip=labelOf(s); });
+    orientBtn.dataset.o=orient;
+  }
+  orientBtn.addEventListener('click',()=>{ orient = orient==='doc' ? 'ngang' : 'doc'; refreshSizes(); });
+  refreshSizes();
+
+  /* ---- Hiệu ứng báo đã chép (không dùng thông báo) ---- */
+  function flash(el,ok){
+    const c = ok===false ? 'flash-err' : 'flash-ok';
+    el.classList.add(c); setTimeout(()=>el.classList.remove(c),550);
+  }
+  async function copyText(t,el){
+    try{
+      if(navigator.clipboard && window.isSecureContext!==false){ await navigator.clipboard.writeText(t); }
+      else{ const a=document.createElement('textarea'); a.value=t; document.body.appendChild(a); a.select(); document.execCommand('copy'); a.remove(); }
+      flash(el,true);
+    }catch(e){ flash(el,false); }
+  }
+
+  /* ---- Nạp PDF ---- */
+  async function loadFile(f){
+    errEl.textContent='';
+    if(!f) return;
+    if(!(f.type==='application/pdf' || /\.pdf$/i.test(f.name))){ errEl.textContent='Đây không phải file PDF.'; return; }
+    board.classList.add('busy');
+    try{
+      await workerReady;
+      const data=await f.arrayBuffer();
+      const doc=await pdfjsLib.getDocument({data}).promise;
+      page=await doc.getPage(1);
+      fileName=f.name.replace(/\.pdf$/i,'');
+      const v=page.getViewport({scale:1});
+      orient = v.width>v.height ? 'ngang' : 'doc';
+      refreshSizes();
+      await render();
+    }catch(e){
+      console.error(e);
+      page=null; board.classList.remove('has'); board.classList.remove('busy');
+      errEl.textContent='Không đọc được file này. Bạn thử file PDF khác nhé.';
+      copyBtn.disabled=dlBtn.disabled=true; info.textContent='';
+    }
+  }
+
+  /* ---- Chuyển trang đầu thành PNG ---- */
+  async function render(){
+    if(!page) return;
+    const my=++token;
+    board.classList.add('busy');
+    const base=page.getViewport({scale:1});
+    const long=Math.max(base.width,base.height);
+    let target=LONG[quality]; if(target==null) target=long;
+    target=Math.min(target,MAX_SIDE);
+    const vp=page.getViewport({scale:target/long});
+    const cv=document.createElement('canvas');
+    cv.width=Math.round(vp.width); cv.height=Math.round(vp.height);
+    const ctx=cv.getContext('2d');
+    ctx.fillStyle='#fff'; ctx.fillRect(0,0,cv.width,cv.height);
+    await page.render({canvasContext:ctx,viewport:vp}).promise;
+    const b=await new Promise(r=>cv.toBlob(r,'image/png'));
+    if(my!==token) return;
+    blob=b;
+    if(url) URL.revokeObjectURL(url);
+    url=URL.createObjectURL(b);
+    preview.src=url;
+    board.classList.add('has'); board.classList.remove('busy');
+    copyBtn.disabled=dlBtn.disabled=false;
+    info.textContent=fileName+'.pdf  ·  '+cv.width+' × '+cv.height+' px  ·  '+(b.size/1048576).toFixed(1)+' MB';
+  }
+
+  /* ---- Độ nét ---- */
+  $('seg').addEventListener('click',e=>{
+    const b=e.target.closest('button'); if(!b) return;
+    quality=b.dataset.q;
+    [...$('seg').children].forEach(x=>x.setAttribute('aria-pressed',x===b));
+    render();
+  });
+
+  /* ---- Sao chép ảnh / Tải xuống ---- */
+  copyBtn.addEventListener('click',async()=>{
+    if(!blob) return;
+    try{
+      await navigator.clipboard.write([new ClipboardItem({'image/png':blob})]);
+      flash(copyBtn,true);
+    }catch(e){ console.error(e); flash(copyBtn,false); }
+  });
+  dlBtn.addEventListener('click',()=>{
+    if(!blob) return;
+    const a=document.createElement('a'); a.href=url; a.download=fileName+'.png';
+    document.body.appendChild(a); a.click(); a.remove();
+    flash(dlBtn,true);
+  });
+
+  /* ---- Chọn / thả file ---- */
+  drop.addEventListener('click',()=>fileInput.click());
+  $('pick2').addEventListener('click',()=>fileInput.click());
+  fileInput.addEventListener('change',()=>{ loadFile(fileInput.files[0]); fileInput.value=''; });
+  ['dragenter','dragover'].forEach(ev=>window.addEventListener(ev,e=>{e.preventDefault();board.classList.add('over');}));
+  ['dragleave','drop'].forEach(ev=>window.addEventListener(ev,e=>{e.preventDefault();if(ev==='drop'||e.target===document.documentElement||!e.relatedTarget)board.classList.remove('over');}));
+  window.addEventListener('drop',e=>{ const f=e.dataTransfer&&e.dataTransfer.files[0]; if(f) loadFile(f); });
+})();
+</script>
+</body>
+</html>
