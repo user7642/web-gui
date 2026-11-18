@@ -71,6 +71,15 @@ input[type=search]{font:400 15px inherit;font-family:inherit;color:var(--ink);ba
 .url{font-size:12.5px;color:var(--muted);overflow-wrap:anywhere}
 .copy{align-self:center}
 .empty{grid-column:1/-1;text-align:center;color:var(--muted);padding:36px 12px;background:var(--surface);border:1px dashed var(--line);border-radius:20px}
+.excl{margin:18px 0 0;background:var(--surface);border:1px solid var(--line);border-radius:16px;padding:0 18px}
+.excl summary{cursor:pointer;padding:14px 0;font-weight:600;font-size:14px}
+.excl summary span{color:var(--muted);font-weight:400;margin-left:6px}
+.excl .body{padding:0 0 16px;display:grid;gap:10px}
+.excl p{margin:0;color:var(--muted);font-size:13px}
+.excl textarea{width:100%;min-height:96px;resize:vertical;font:400 14px/1.5 ui-monospace,Menlo,Consolas,monospace;color:var(--ink);
+  background:var(--surface2);border:1px solid var(--line);border-radius:12px;padding:10px 12px}
+.excl textarea:focus-visible{outline:3px solid var(--accent);outline-offset:3px}
+.excl .btn{justify-self:start}
 .foot{margin-top:28px;color:var(--muted);font-size:13px;text-align:center}
 @media (max-width:720px){
   .hero{grid-template-columns:1fr;padding:24px}
@@ -84,7 +93,7 @@ input[type=search]{font:400 15px inherit;font-family:inherit;color:var(--ink);ba
   <header class="hero">
     <div>
       <h1>Công cụ web-gui</h1>
-      <p class="sub" id="sub">Mọi trang trong thư mục, mở bằng một lần bấm. Quét lần cuối: 21:32:45 13/11/2026.</p>
+      <p class="sub" id="sub">Mọi trang trong thư mục, mở bằng một lần bấm. Quét lần cuối: 01:25:06 19/11/2026.</p>
     </div>
     <button class="scan" id="scan" type="button" aria-label="Quét thư mục">
       <svg viewBox="0 0 48 48" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" aria-hidden="true">
@@ -96,6 +105,16 @@ input[type=search]{font:400 15px inherit;font-family:inherit;color:var(--ink);ba
   </header>
 
   <div class="bar ok" id="bar" hidden=""></div>
+
+  <details class="excl" id="exclBox" open="">
+    <summary>Loại trừ khi quét<span id="exclCount">(1)</span></summary>
+    <div class="body">
+      <p>Mỗi dòng một tên file. Dùng dấu * để thay nhiều ký tự, ví dụ <code>private-*.html</code>. Không phân biệt hoa thường.</p>
+      <textarea id="exclText" spellcheck="false" placeholder="ten-file-rieng-tu.html
+thu-nghiem-*"></textarea>
+      <button class="btn primary" id="exclApply" type="button">Áp dụng</button>
+    </div>
+  </details>
 
   <div class="tools">
     <h2>Trang đã quét<span id="count">7</span></h2>
@@ -112,7 +131,10 @@ const REPO_API = "https://api.github.com/repos/user7642/web-gui/contents/";
 /* Dữ liệu dưới đây được ghi cứng vào file mỗi lần bấm Scan rồi Lưu. Không sửa tay phần giữa hai dấu mốc. */
 /*DATA_START*/
 let DATA = {
- "scanned": "2026-11-13T14:32:45.558Z",
+ "scanned": "2026-11-18T18:25:06.753Z",
+ "exclude": [
+  "banner-tool.html"
+ ],
  "pages": [
   {
    "file": "font-preview.html",
@@ -163,6 +185,18 @@ let DATA = {
  ]
 };
 /*DATA_END*/
+DATA.exclude = Array.isArray(DATA.exclude) ? DATA.exclude : [];
+let dirHandle = null;
+
+/* Kiểm tra một file có nằm trong danh sách loại trừ không */
+function isExcluded(name){
+  const n = name.toLowerCase(), bare = n.replace(/\.html?$/, "");
+  return DATA.exclude.some(raw => {
+    const pat = String(raw).trim().toLowerCase(); if (!pat) return false;
+    const re = new RegExp("^" + pat.replace(/[.+?^${}()|[\]\\]/g, "\\$&").replace(/\*/g, ".*") + "$");
+    return re.test(n) || re.test(bare);
+  });
+}
 
 const $ = id => document.getElementById(id);
 const esc = s => String(s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
@@ -216,17 +250,18 @@ function bar(html, cls){ const b = $("bar"); b.className = "bar " + (cls || "");
 
 function applyScan(pages){
   const old = new Set(DATA.pages.map(p => p.file));
+  pages = pages.filter(p => !isExcluded(p.file));
   pages.sort((a,b) => a.file.localeCompare(b.file));
   pages.forEach(p => p.isNew = !old.has(p.file));
   const gone = [...old].filter(f => !pages.some(p => p.file === f)).length;
-  DATA = { scanned: new Date().toISOString(), pages };
+  DATA = { scanned: new Date().toISOString(), exclude: DATA.exclude, pages };
   render();
-  return { added: pages.filter(p => p.isNew).length, gone };
+  return { pages, added: pages.filter(p => p.isNew).length, gone };
 }
 
 /* Ghi cứng dữ liệu vào mã nguồn của trang */
 function bake(src){
-  const clean = { scanned: DATA.scanned, pages: DATA.pages.map(({isNew, ...p}) => p) };
+  const clean = { scanned: DATA.scanned, exclude: DATA.exclude, pages: DATA.pages.map(({isNew, ...p}) => p) };
   const json = JSON.stringify(clean, null, 1).replace(/</g, "\\u003c");
   return src.replace(/\/\*DATA_START\*\/[\s\S]*?\/\*DATA_END\*\//, () => "/*DATA_START*/\nlet DATA = " + json + ";\n/*DATA_END*/");
 }
@@ -243,31 +278,36 @@ function download(text){
 }
 
 /* Quét trên máy: chọn thư mục web-gui (Chrome, Edge) */
-async function scanLocal(){
-  const dir = await window.showDirectoryPicker({ mode: "readwrite" });
-  const pages = [];
-  for await (const [name, h] of dir.entries()){
-    if (h.kind === "file" && /\.html?$/i.test(name) && name.toLowerCase() !== "index.html")
-      pages.push(parseMeta(name, await (await h.getFile()).text()));
-  }
-  const r = applyScan(pages);
-  bar(`<span>Thấy <b>${pages.length}</b> trang (${r.added} mới, ${r.gone} đã mất). Lưu để ghi cứng vào index.html.</span>
+function showSaveBar(msg){
+  bar(`<span>${msg}</span>
        <button class="btn primary" id="save" type="button">Lưu vào index.html</button>`, "ok");
   $("save").onclick = async () => {
     const out = bake(await getSource());
     try {
-      const w = await (await dir.getFileHandle("index.html", {create:true})).createWritable();
+      const w = await (await dirHandle.getFileHandle("index.html", {create:true})).createWritable();
       await w.write(out); await w.close();
       bar("<span>Đã ghi index.html vào thư mục. Bước tiếp theo: commit và push lên GitHub.</span>", "ok");
     } catch(e){ download(out); bar("<span>Không ghi trực tiếp được, đã tải index.html về. Chép đè vào thư mục rồi push.</span>", "err"); }
   };
+}
+async function scanLocal(){
+  dirHandle = await window.showDirectoryPicker({ mode: "readwrite" });
+  const pages = [];
+  let skipped = 0;
+  for await (const [name, h] of dirHandle.entries()){
+    if (h.kind !== "file" || !/\.html?$/i.test(name) || name.toLowerCase() === "index.html") continue;
+    if (isExcluded(name)) { skipped++; continue; }
+    pages.push(parseMeta(name, await (await h.getFile()).text()));
+  }
+  const r = applyScan(pages);
+  showSaveBar(`Thấy <b>${r.pages.length}</b> trang (${r.added} mới, ${r.gone} đã mất${skipped ? ", " + skipped + " bị loại trừ" : ""}). Lưu để ghi cứng vào index.html.`);
 }
 
 /* Quét trên GitHub Pages: đọc danh sách file từ GitHub API (repo công khai) */
 async function scanHosted(){
   const r = await fetch(REPO_API);
   if (!r.ok) throw new Error("GitHub API trả về mã " + r.status + (r.status === 403 ? " (hết lượt gọi, thử lại sau ít phút)" : ""));
-  const files = (await r.json()).filter(f => f.type === "file" && /\.html?$/i.test(f.name) && f.name.toLowerCase() !== "index.html");
+  const files = (await r.json()).filter(f => f.type === "file" && /\.html?$/i.test(f.name) && f.name.toLowerCase() !== "index.html" && !isExcluded(f.name));
   const pages = await Promise.all(files.map(async f => {
     try { return parseMeta(f.name, await (await fetch("./" + f.name)).text()); } catch(e){ return parseMeta(f.name, ""); }
   }));
@@ -286,6 +326,25 @@ $("scan").addEventListener("click", async () => {
     if (e && e.name !== "AbortError") bar("<span>" + esc(e.message || e) + "</span>", "err");
   } finally { btn.disabled = false; btn.classList.remove("busy"); $("scanLabel").textContent = "Scan"; }
 });
+
+/* Bảng loại trừ: chỉ hiện khi mở trên máy, người xem trên GitHub Pages không thấy */
+const isHosted = location.protocol !== "file:" && location.hostname.endsWith("github.io");
+function updateExclCount(){ $("exclCount").textContent = DATA.exclude.length ? "(" + DATA.exclude.length + ")" : ""; }
+if (!isHosted){
+  $("exclBox").hidden = false;
+  $("exclText").value = DATA.exclude.join("\n");
+  updateExclCount();
+  $("exclApply").addEventListener("click", () => {
+    DATA.exclude = $("exclText").value.split("\n").map(x => x.trim()).filter(Boolean);
+    const before = DATA.pages.length;
+    DATA.pages = DATA.pages.filter(p => !isExcluded(p.file));
+    updateExclCount(); render();
+    const removed = before - DATA.pages.length;
+    const msg = `Đã cập nhật danh sách loại trừ${removed ? ", ẩn " + removed + " trang" : ""}. ` +
+      (dirHandle ? "Lưu để ghi vào index.html." : "Bấm Scan, chọn thư mục rồi Lưu để ghi vào index.html.");
+    if (dirHandle) showSaveBar(msg); else bar("<span>" + msg + "</span>", "ok");
+  });
+}
 
 render();
 </script>
